@@ -1,0 +1,11 @@
+{
+  "name": "futuagro-api-rest",
+  "description": "",
+  "version": "0.1.0",
+  "dependencies": {},
+  "devDependencies": {
+    "serverless": "^1.50.0",
+    "serverless-dotenv-plugin": "^2.1.1",
+    "serverless-offline": "^5.10.1"
+  }
+}

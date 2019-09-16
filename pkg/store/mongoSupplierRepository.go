@@ -1,0 +1,151 @@
+package store
+
+import (
+	"context"
+	"log"
+	"time"
+
+	"futuagro.com/pkg/config"
+	"futuagro.com/pkg/domain/models"
+	"github.com/pkg/errors"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+const supplierCollection string = "suppliers"
+
+//MongoSupplierRepository a repository for saving suppliers into a mongo database
+type MongoSupplierRepository struct {
+	databaseName string
+	client       *mongo.Client
+}
+
+// FindByID returns a supplier by its ID from mongodb
+func (repository *MongoSupplierRepository) FindByID(id string) (*models.Supplier, error) {
+	collection := repository.client.Database(repository.databaseName).Collection(supplierCollection)
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
+	}
+	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
+	result := collection.FindOne(context.TODO(), filter)
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+
+	var supplier *models.Supplier
+	if err := result.Decode(&supplier); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, errors.Wrap(err, "Error decoding a supplier")
+	}
+	return supplier, nil
+}
+
+// FindAll returns a list of suppliers from mongodb
+func (repository *MongoSupplierRepository) FindAll() ([]*models.Supplier, error) {
+	collection := repository.client.Database(repository.databaseName).Collection(supplierCollection)
+	cursor, err := collection.Find(context.Background(), bson.D{{}})
+	defer cursor.Close(context.TODO())
+	if err != nil {
+		return nil, errors.Wrap(err, "Error finding all suppliers")
+	}
+
+	var results []*models.Supplier
+	for cursor.Next(context.TODO()) {
+		var supplier models.Supplier
+		if err := cursor.Decode(&supplier); err != nil {
+			log.Printf("Error decoding a supplier on FindAll(): %v", err)
+		} else {
+			results = append(results, &supplier)
+		}
+	}
+	err = cursor.Err()
+	if err != nil {
+		return nil, errors.Wrap(err, "Error finding all suppliers")
+	}
+	return results, nil
+}
+
+// Insert a new supplier into mongodb
+func (repository *MongoSupplierRepository) Insert(supplier *models.Supplier) (string, error) {
+	collection := repository.client.Database(repository.databaseName).Collection(supplierCollection)
+	data := bson.D{
+		primitive.E{Key: "name", Value: supplier.Name},
+		primitive.E{Key: "documentType", Value: supplier.DocumentType},
+		primitive.E{Key: "documentNumber", Value: supplier.DocumentNumber},
+		primitive.E{Key: "city", Value: supplier.City},
+		primitive.E{Key: "email", Value: supplier.Email},
+		primitive.E{Key: "phoneNumber", Value: supplier.PhoneNumber},
+		primitive.E{Key: "products", Value: supplier.Products},
+		primitive.E{Key: "createdAt", Value: primitive.DateTime(time.Now().UnixNano() / 1e6)},
+		primitive.E{Key: "updatedAt", Value: primitive.DateTime(time.Now().UnixNano() / 1e6)},
+	}
+	result, err := collection.InsertOne(context.TODO(), data)
+	if err != nil {
+		return string(""), errors.Wrap(err, "Inserting a new supplier")
+	}
+	return result.InsertedID.(primitive.ObjectID).Hex(), nil
+}
+
+// Update a supplier's document by its id in mongodb
+func (repository *MongoSupplierRepository) Update(id string, supplier *models.Supplier) (*models.Supplier, error) {
+	collection := repository.client.Database(repository.databaseName).Collection(supplierCollection)
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
+	}
+	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
+	update := bson.D{primitive.E{
+		Key: "$set",
+		Value: bson.D{
+			primitive.E{Key: "name", Value: supplier.Name},
+			primitive.E{Key: "documentType", Value: supplier.DocumentType},
+			primitive.E{Key: "documentNumber", Value: supplier.DocumentNumber},
+			primitive.E{Key: "city", Value: supplier.City},
+			primitive.E{Key: "email", Value: supplier.Email},
+			primitive.E{Key: "phoneNumber", Value: supplier.PhoneNumber},
+			primitive.E{Key: "products", Value: supplier.Products},
+			primitive.E{Key: "updatedAt", Value: primitive.DateTime(time.Now().UnixNano() / 1e6)},
+		},
+	}}
+
+	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
+	defer cancel()
+	updateOpts := options.FindOneAndUpdate().SetReturnDocument(options.After)
+	result := collection.FindOneAndUpdate(ctx, filter, update, updateOpts)
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+	var updatedSupplier *models.Supplier
+	if err := result.Decode(&updatedSupplier); err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, errors.Wrap(err, "Error decoding a supplier")
+	}
+	return updatedSupplier, nil
+}
+
+// Delete a supliers document from mongodb
+func (repository *MongoSupplierRepository) Delete(id string) (bool, error) {
+	collection := repository.client.Database(repository.databaseName).Collection(supplierCollection)
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return false, errors.Wrap(err, "Error parsing ObjectID from Hex")
+	}
+	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
+	result, err := collection.DeleteOne(context.Background(), filter)
+	if err != nil {
+		return false, errors.Wrap(err, "Error deleting a supplier")
+	}
+	return result.DeletedCount > 0, nil
+}
+
+// NewMongoSupplierRepository returns a new instance of a MongoDB supplier repository.
+func NewMongoSupplierRepository(confPtr *config.Config, clientPtr *mongo.Client) *MongoSupplierRepository {
+	return &MongoSupplierRepository{databaseName: confPtr.Database.Name, client: clientPtr}
+}

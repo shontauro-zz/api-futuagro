@@ -1,0 +1,56 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+app: Futuagro
+service: futuagro-api-rest
+plugins:
+  - serverless-dotenv-plugin
+  - serverless-offline
+frameworkVersion: '>=1.28.0 <2.0.0'
+
+provider:
+  name: aws
+  runtime: go1.x
+  stage: ${opt:stage}
+  profile: ${opt:profile, 'futuagro'}
+  region: ${env:MY_AWS_PROVIDER_REGION}
+  vpc:
+    securityGroupIds:
+      - sg-bb2329e7
+    subnetIds:
+      - subnet-0765031e81410d62e
+      - subnet-09e988696106c45f8
+custom:
+  dotenv:
+    basePath: ../
+
+package:
+  exclude:
+    - ./**
+  include:
+    - ./bin/**
+
+functions:
+  default:
+    handler: bin/handler
+    environment:
+      APP_PORT: ${env:APP_PORT}
+      DB_URI: ${env:DB_URI}
+      DB_NAME: ${env:DB_NAME}
+      DB_POOL_SIZE: ${env:DB_POOL_SIZE}
+      MY_AWS_PROVIDER_REGION: ${env:MY_AWS_PROVIDER_REGION}
+      MY_AWS_SECRET_ACCESS_KEY: ${env:MY_AWS_SECRET_ACCESS_KEY}
+      MY_AWS_ACCESS_KEY_ID: ${env:MY_AWS_ACCESS_KEY_ID}
+    events:
+      - http: ANY /
+      - http: 'ANY {proxy+}'
