@@ -1,3 +1,16 @@
+# Models & Diagrams files
+*.bak_*
+.futuragro.vpp.lck
+
+# Serverless directories
+.serverless
+
+# golang output binary directory
+bin
+
+# golang vendor (dependencies) directory
+vendor
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -10,3 +23,15 @@
 
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
+
+# Environment variables
+.env
+.env.development
+.env.production
+.vscode
+
+# mongodb replica set data directory
+data
+
+apig/node_modules
+/node_modules
