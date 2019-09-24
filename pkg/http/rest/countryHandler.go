@@ -27,12 +27,12 @@ func (h *CountryHandler) NewRouter() chi.Router {
 		r.Method(http.MethodGet, "/", rootHandler(h.findCountryByID))
 		r.Method(http.MethodPut, "/", rootHandler(h.updateCountryByID))
 		r.Method(http.MethodDelete, "/", rootHandler(h.deleteCountryByID))
-		r.Method(http.MethodPost, "/country-states", rootHandler(h.createState))
 	})
 
 	r.Route("/{countryId}/country-states", func(r chi.Router) {
-		r.Method(http.MethodPost, "/{id}", rootHandler(h.createState))
+		r.Method(http.MethodPost, "/", rootHandler(h.createState))
 		r.Method(http.MethodPut, "/{id}", rootHandler(h.updateState))
+		r.Method(http.MethodDelete, "/{id}", rootHandler(h.deleteState))
 	})
 
 	return r
@@ -54,7 +54,7 @@ func (h *CountryHandler) findAllCountries(w http.ResponseWriter, r *http.Request
 }
 
 func (h *CountryHandler) createCountry(w http.ResponseWriter, r *http.Request) error {
-	var payload models.Country
+	var payload dtos.CountryDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
 	}
@@ -137,7 +137,7 @@ func (h *CountryHandler) deleteCountryByID(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *CountryHandler) createState(w http.ResponseWriter, r *http.Request) error {
-	countryID := chi.URLParam(r, "id")
+	countryID := chi.URLParam(r, "countryId")
 	var payload dtos.CountryStateDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
@@ -162,7 +162,7 @@ func (h *CountryHandler) createState(w http.ResponseWriter, r *http.Request) err
 
 func (h *CountryHandler) updateState(w http.ResponseWriter, r *http.Request) error {
 	countryID := chi.URLParam(r, "countryId")
-	stateID := chi.URLParam(r, "stateId")
+	stateID := chi.URLParam(r, "id")
 	var payload dtos.CountryStateDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
@@ -187,7 +187,7 @@ func (h *CountryHandler) updateState(w http.ResponseWriter, r *http.Request) err
 
 func (h *CountryHandler) deleteState(w http.ResponseWriter, r *http.Request) error {
 	countryID := chi.URLParam(r, "countryId")
-	stateID := chi.URLParam(r, "stateId")
+	stateID := chi.URLParam(r, "id")
 	country, err := h.Service.DeleteState(countryID, stateID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))

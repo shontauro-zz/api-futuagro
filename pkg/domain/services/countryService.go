@@ -23,7 +23,7 @@ func (s *CountryService) FindAllCountries() ([]*models.Country, error) {
 }
 
 // CreateCountry create a new country record
-func (s *CountryService) CreateCountry(country *models.Country) (string, error) {
+func (s *CountryService) CreateCountry(country *dtos.CountryDto) (string, error) {
 	return s.repository.Insert(country)
 }
 

@@ -7,14 +7,14 @@ import (
 	"github.com/pkg/errors"
 )
 
-// EnumRecordStatus represents the status of a database record, moving through Active, Inactive
-type EnumRecordStatus int
+// EnumRecordStatus represents the status of a database record, moving through active, inactive
+type EnumRecordStatus string
 
 const (
 	// Active represents a record status enable to be query in the database
-	Active EnumRecordStatus = iota
+	Active EnumRecordStatus = "active"
 	// Inactive represents a record status disable, it is a soft delete
-	Inactive
+	Inactive EnumRecordStatus = "inactive"
 )
 
 func (s EnumRecordStatus) String() string {

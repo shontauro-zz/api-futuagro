@@ -77,13 +77,16 @@ func (repo *MongoCountryRepository) FindAll() ([]*models.Country, error) {
 }
 
 // Insert a new country into mongodb
-func (repo *MongoCountryRepository) Insert(country *models.Country) (string, error) {
+func (repo *MongoCountryRepository) Insert(country *dtos.CountryDto) (string, error) {
 	collection := repo.client.Database(repo.databaseName).Collection(countryCollection)
+	var recordStatus = enums.Active.String()
+	if country.RecordStatus != nil {
+		recordStatus = country.RecordStatus.String()
+	}
 	data := bson.D{
 		primitive.E{Key: "countryName", Value: country.CountryName},
 		primitive.E{Key: "countryCode", Value: country.CountryCode},
-		primitive.E{Key: "states", Value: country.States},
-		primitive.E{Key: "RecordStatus", Value: country.RecordStatus},
+		primitive.E{Key: "recordStatus", Value: recordStatus},
 	}
 
 	result, err := collection.InsertOne(context.TODO(), data)
@@ -149,11 +152,15 @@ func (repo *MongoCountryRepository) InsertCountryState(countryID string, stateDt
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
 	}
-	active := enums.Active
+	recordStatus := enums.Active
+	if stateDto.RecordStatus != nil {
+		recordStatus = *stateDto.RecordStatus
+	}
 	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
 	data := bson.D{
-		primitive.E{Key: "countryState", Value: stateDto.StateName},
-		primitive.E{Key: "RecordStatus", Value: &active},
+		primitive.E{Key: "_id", Value: primitive.NewObjectID()},
+		primitive.E{Key: "stateName", Value: stateDto.StateName},
+		primitive.E{Key: "recordStatus", Value: recordStatus},
 	}
 	update := bson.D{
 		primitive.E{
@@ -196,14 +203,14 @@ func (repo *MongoCountryRepository) UpdateCountryState(countryID string, stateID
 		primitive.E{Key: "states._id", Value: stateObjID},
 	}
 	data := bson.D{
-		primitive.E{Key: "stateName", Value: stateDto.StateName},
-		primitive.E{Key: "recordStatus", Value: stateDto.RecordStatus},
+		primitive.E{Key: "states.$.stateName", Value: stateDto.StateName},
+	}
+	if stateDto.RecordStatus != nil {
+		data = append(data, primitive.E{Key: "states.$.recordStatus", Value: stateDto.RecordStatus})
 	}
 	update := bson.D{primitive.E{
-		Key: "$set",
-		Value: bson.D{
-			primitive.E{Key: "states.$", Value: data},
-		},
+		Key:   "$set",
+		Value: data,
 	}}
 	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
 	defer cancel()
