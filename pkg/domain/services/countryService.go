@@ -28,7 +28,7 @@ func (s *CountryService) CreateCountry(country *dtos.CountryDto) (string, error)
 }
 
 // UpdateCountryByID update a country's data by its id
-func (s *CountryService) UpdateCountryByID(id string, country *models.Country) (*models.Country, error) {
+func (s *CountryService) UpdateCountryByID(id string, country *dtos.CountryDto) (*models.Country, error) {
 	return s.repository.Update(id, country)
 }
 

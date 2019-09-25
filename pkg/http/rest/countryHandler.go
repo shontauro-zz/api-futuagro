@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"futuagro.com/pkg/domain/dtos"
-	"futuagro.com/pkg/domain/models"
 	"futuagro.com/pkg/domain/services"
 	"github.com/go-chi/chi"
 )
@@ -23,16 +22,16 @@ func (h *CountryHandler) NewRouter() chi.Router {
 	r.Method(http.MethodPost, "/", rootHandler(h.createCountry))
 
 	// Subroutes:
-	r.Route("/{id}", func(r chi.Router) {
+	r.Route("/{countryID}", func(r chi.Router) {
 		r.Method(http.MethodGet, "/", rootHandler(h.findCountryByID))
 		r.Method(http.MethodPut, "/", rootHandler(h.updateCountryByID))
 		r.Method(http.MethodDelete, "/", rootHandler(h.deleteCountryByID))
 	})
 
-	r.Route("/{countryId}/country-states", func(r chi.Router) {
+	r.Route("/{countryID}/country-states", func(r chi.Router) {
 		r.Method(http.MethodPost, "/", rootHandler(h.createState))
-		r.Method(http.MethodPut, "/{id}", rootHandler(h.updateState))
-		r.Method(http.MethodDelete, "/{id}", rootHandler(h.deleteState))
+		r.Method(http.MethodPut, "/{stateID}", rootHandler(h.updateState))
+		r.Method(http.MethodDelete, "/{stateID}", rootHandler(h.deleteState))
 	})
 
 	return r
@@ -78,7 +77,7 @@ func (h *CountryHandler) createCountry(w http.ResponseWriter, r *http.Request) e
 }
 
 func (h *CountryHandler) findCountryByID(w http.ResponseWriter, r *http.Request) error {
-	ID := chi.URLParam(r, "id")
+	ID := chi.URLParam(r, "countryID")
 	country, err := h.Service.FindCountryByID(ID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
@@ -97,8 +96,8 @@ func (h *CountryHandler) findCountryByID(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *CountryHandler) updateCountryByID(w http.ResponseWriter, r *http.Request) error {
-	ID := chi.URLParam(r, "id")
-	var payload models.Country
+	ID := chi.URLParam(r, "countryID")
+	var payload dtos.CountryDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
 	}
@@ -121,7 +120,7 @@ func (h *CountryHandler) updateCountryByID(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *CountryHandler) deleteCountryByID(w http.ResponseWriter, r *http.Request) error {
-	ID := chi.URLParam(r, "id")
+	ID := chi.URLParam(r, "countryID")
 	result, err := h.Service.DeleteCountryByID(ID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
@@ -137,7 +136,7 @@ func (h *CountryHandler) deleteCountryByID(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *CountryHandler) createState(w http.ResponseWriter, r *http.Request) error {
-	countryID := chi.URLParam(r, "countryId")
+	countryID := chi.URLParam(r, "countryID")
 	var payload dtos.CountryStateDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
@@ -161,8 +160,8 @@ func (h *CountryHandler) createState(w http.ResponseWriter, r *http.Request) err
 }
 
 func (h *CountryHandler) updateState(w http.ResponseWriter, r *http.Request) error {
-	countryID := chi.URLParam(r, "countryId")
-	stateID := chi.URLParam(r, "id")
+	countryID := chi.URLParam(r, "countryID")
+	stateID := chi.URLParam(r, "stateID")
 	var payload dtos.CountryStateDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
@@ -186,8 +185,8 @@ func (h *CountryHandler) updateState(w http.ResponseWriter, r *http.Request) err
 }
 
 func (h *CountryHandler) deleteState(w http.ResponseWriter, r *http.Request) error {
-	countryID := chi.URLParam(r, "countryId")
-	stateID := chi.URLParam(r, "id")
+	countryID := chi.URLParam(r, "countryID")
+	stateID := chi.URLParam(r, "stateID")
 	country, err := h.Service.DeleteState(countryID, stateID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))

@@ -79,16 +79,16 @@ func (repo *MongoCityRepository) FindCitiesByCountryState(stateID string) ([]*mo
 }
 
 // Insert a new city into mongodb
-func (repo *MongoCityRepository) Insert(dto *dtos.CityDto) (string, error) {
+func (repo *MongoCityRepository) Insert(stateID string, dto *dtos.CityDto) (string, error) {
 	collection := repo.client.Database(repo.databaseName).Collection(cityCollection)
-	stateID, err := primitive.ObjectIDFromHex(dto.CountryStateID)
+	objStateID, err := primitive.ObjectIDFromHex(stateID)
 	if err != nil {
 		return string(""), errors.Wrap(err, "Error parsing ObjectID from Hex")
 	}
 	active := enums.Active
 	data := bson.D{
 		primitive.E{Key: "cityName", Value: dto.CityName},
-		primitive.E{Key: "countryState", Value: stateID},
+		primitive.E{Key: "countryState", Value: objStateID},
 		primitive.E{Key: "recordStatus", Value: &active},
 	}
 
@@ -100,20 +100,30 @@ func (repo *MongoCityRepository) Insert(dto *dtos.CityDto) (string, error) {
 }
 
 // Update a city's document by its id in mongodb
-func (repo *MongoCityRepository) Update(id string, dto *dtos.CityDto) (*models.City, error) {
-	collection := repo.client.Database(repo.databaseName).Collection(countryCollection)
-	objID, err := primitive.ObjectIDFromHex(id)
+func (repo *MongoCityRepository) Update(stateID string, cityID string, cityDto *dtos.CityDto) (*models.City, error) {
+	collection := repo.client.Database(repo.databaseName).Collection(cityCollection)
+	objStateID, err := primitive.ObjectIDFromHex(stateID)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
 	}
-	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
+	objCityID, err := primitive.ObjectIDFromHex(cityID)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
+	}
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: objCityID},
+		primitive.E{Key: "countryState", Value: objStateID},
+	}
+	data := bson.D{
+		primitive.E{Key: "cityName", Value: cityDto.CityName},
+	}
+	if cityDto.RecordStatus != nil {
+		data = append(data, primitive.E{Key: "recordStatus", Value: cityDto.RecordStatus})
+	}
+
 	update := bson.D{primitive.E{
-		Key: "$set",
-		Value: bson.D{
-			primitive.E{Key: "cityName", Value: dto.CityName},
-			primitive.E{Key: "countryState", Value: dto.CountryStateID},
-			primitive.E{Key: "RecordStatus", Value: dto.RecordStatus},
-		},
+		Key:   "$set",
+		Value: data,
 	}}
 
 	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
@@ -134,13 +144,20 @@ func (repo *MongoCityRepository) Update(id string, dto *dtos.CityDto) (*models.C
 }
 
 // Delete a city document from mongodb
-func (repo *MongoCityRepository) Delete(id string) (bool, error) {
+func (repo *MongoCityRepository) Delete(stateID string, cityID string) (bool, error) {
 	collection := repo.client.Database(repo.databaseName).Collection(cityCollection)
-	objID, err := primitive.ObjectIDFromHex(id)
+	objStateID, err := primitive.ObjectIDFromHex(stateID)
 	if err != nil {
 		return false, errors.Wrap(err, "Error parsing ObjectID from Hex")
 	}
-	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
+	objCityID, err := primitive.ObjectIDFromHex(cityID)
+	if err != nil {
+		return false, errors.Wrap(err, "Error parsing ObjectID from Hex")
+	}
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: objCityID},
+		primitive.E{Key: "countryState", Value: objStateID},
+	}
 	result, err := collection.DeleteOne(context.Background(), filter)
 	if err != nil {
 		return false, errors.Wrap(err, "Error deleting a city")

@@ -40,7 +40,12 @@ func AllowOriginFunc(r *http.Request, origin string) bool {
 }
 
 // NewServer returns a new HTTP server.
-func NewServer(confPtr *config.Config, supplierServ *services.SupplierService, countryServ *services.CountryService) *Server {
+func NewServer(
+	confPtr *config.Config,
+	supplierServ *services.SupplierService,
+	countryServ *services.CountryService,
+	cityServ *services.CityService,
+) *Server {
 	server := &Server{
 		config:          confPtr,
 		supplierService: supplierServ,
@@ -69,9 +74,11 @@ func NewServer(confPtr *config.Config, supplierServ *services.SupplierService, c
 
 	rSupplier := rest.SupplierHandler{Service: supplierServ}
 	rCountry := rest.CountryHandler{Service: countryServ}
+	rCity := rest.CityHandler{Service: cityServ}
 
 	r.Mount("/suppliers", rSupplier.NewRouter())
 	r.Mount("/countries", rCountry.NewRouter())
+	r.Mount("/country-states", rCity.NewRouter())
 
 	server.router = r
 	return server

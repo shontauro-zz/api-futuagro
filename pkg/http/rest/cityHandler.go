@@ -4,123 +4,124 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"futuagro.com/pkg/domain/models"
+	"futuagro.com/pkg/domain/dtos"
 	"futuagro.com/pkg/domain/services"
 	"github.com/go-chi/chi"
 )
 
-// SupplierHandler return a handler for the Rest API of a supplier
-type SupplierHandler struct {
-	Service *services.SupplierService
+// CityHandler return a handler for the Rest API of a city
+type CityHandler struct {
+	Service *services.CityService
 }
 
-// NewRouter export a router configured with a supplier's routes
-func (h *SupplierHandler) NewRouter() chi.Router {
+// NewRouter export a router configured with a country's routes
+func (h *CityHandler) NewRouter() chi.Router {
 	r := chi.NewRouter()
 
-	r.Method(http.MethodGet, "/", rootHandler(h.findAllSuppliers))
-	r.Method(http.MethodPost, "/", rootHandler(h.createSupplier))
-
-	// Subroutes:
-	r.Route("/{supplierID}", func(r chi.Router) {
-		r.Method(http.MethodGet, "/", rootHandler(h.findSupplierByID))
-		r.Method(http.MethodPut, "/", rootHandler(h.updateSupplierByID))
-		r.Method(http.MethodDelete, "/", rootHandler(h.deleteSupplierByID))
+	r.Route("/{stateID}/cities", func(r chi.Router) {
+		r.Method(http.MethodGet, "/", rootHandler(h.findAllCitiesByState))
+		r.Method(http.MethodPost, "/", rootHandler(h.createCity))
+		r.Method(http.MethodPut, "/{cityID}", rootHandler(h.updateCityByID))
+		r.Method(http.MethodDelete, "/{cityID}", rootHandler(h.deleteCityByID))
 	})
 
 	return r
 }
 
-func (h *SupplierHandler) findAllSuppliers(w http.ResponseWriter, r *http.Request) error {
-	suppliers, err := h.Service.FindAllSuppliers()
+func (h *CityHandler) findAllCitiesByState(w http.ResponseWriter, r *http.Request) error {
+	stateID := chi.URLParam(r, "stateID")
+	results, err := h.Service.FindAllCitiesByCountryState(stateID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(suppliers); err != nil {
+	if err := json.NewEncoder(w).Encode(results); err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	return nil
 }
 
-func (h *SupplierHandler) createSupplier(w http.ResponseWriter, r *http.Request) error {
-	var payload models.Supplier
+func (h *CityHandler) createCity(w http.ResponseWriter, r *http.Request) error {
+	stateID := chi.URLParam(r, "stateID")
+	var payload dtos.CityDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
 	}
 
-	result, err := h.Service.CreateSupplier(&payload)
+	result, err := h.Service.CreateCity(stateID, &payload)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
-	supplier, err := h.Service.FindSupplierByID(result)
+	city, err := h.Service.FindCityByID(result)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(supplier); err != nil {
+	if err := json.NewEncoder(w).Encode(city); err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 	return nil
 }
 
-func (h *SupplierHandler) findSupplierByID(w http.ResponseWriter, r *http.Request) error {
-	supplierID := chi.URLParam(r, "supplierID")
-	supplier, err := h.Service.FindSupplierByID(supplierID)
+func (h *CityHandler) findCityByID(w http.ResponseWriter, r *http.Request) error {
+	ID := chi.URLParam(r, "id")
+	city, err := h.Service.FindCityByID(ID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
-	if supplier == nil {
-		return NewNotFoundError(nil, "Supplier Not Found")
+	if city == nil {
+		return NewNotFoundError(nil, "City Not Found")
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(supplier); err != nil {
+	if err := json.NewEncoder(w).Encode(city); err != nil {
 		return NewAPIError(err, 500, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 	return nil
 }
 
-func (h *SupplierHandler) updateSupplierByID(w http.ResponseWriter, r *http.Request) error {
-	supplierID := chi.URLParam(r, "supplierID")
-	var payload models.Supplier
+func (h *CityHandler) updateCityByID(w http.ResponseWriter, r *http.Request) error {
+	stateID := chi.URLParam(r, "stateID")
+	cityID := chi.URLParam(r, "cityID")
+	var payload dtos.CityDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
 	}
 
-	supplier, err := h.Service.UpdateSupplierByID(supplierID, &payload)
+	city, err := h.Service.UpdateCityByID(stateID, cityID, &payload)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
-	if supplier == nil {
-		return NewNotFoundError(nil, "Supplier Not Found")
+	if city == nil {
+		return NewNotFoundError(nil, "City Not Found")
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(supplier); err != nil {
+	if err := json.NewEncoder(w).Encode(city); err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 	return nil
 }
 
-func (h *SupplierHandler) deleteSupplierByID(w http.ResponseWriter, r *http.Request) error {
-	supplierID := chi.URLParam(r, "supplierID")
-	result, err := h.Service.DeleteSupplier(supplierID)
+func (h *CityHandler) deleteCityByID(w http.ResponseWriter, r *http.Request) error {
+	stateID := chi.URLParam(r, "stateID")
+	cityID := chi.URLParam(r, "cityID")
+	result, err := h.Service.DeleteCityByID(stateID, cityID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 	if result == false {
-		return NewNotFoundError(nil, "Supplier Not Found")
+		return NewNotFoundError(nil, "Country Not Found")
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

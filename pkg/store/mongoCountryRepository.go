@@ -97,7 +97,7 @@ func (repo *MongoCountryRepository) Insert(country *dtos.CountryDto) (string, er
 }
 
 // Update a country by its id in mongodb
-func (repo *MongoCountryRepository) Update(id string, country *models.Country) (*models.Country, error) {
+func (repo *MongoCountryRepository) Update(id string, country *dtos.CountryDto) (*models.Country, error) {
 	collection := repo.client.Database(repo.databaseName).Collection(countryCollection)
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -109,7 +109,7 @@ func (repo *MongoCountryRepository) Update(id string, country *models.Country) (
 		Value: bson.D{
 			primitive.E{Key: "countryName", Value: country.CountryName},
 			primitive.E{Key: "countryCode", Value: country.CountryCode},
-			primitive.E{Key: "RecordStatus", Value: country.RecordStatus},
+			primitive.E{Key: "recordStatus", Value: country.RecordStatus},
 		},
 	}}
 
