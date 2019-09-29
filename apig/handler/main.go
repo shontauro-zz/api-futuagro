@@ -29,10 +29,12 @@ func init() {
 	supplierRepository := store.NewMongoSupplierRepository(conf, mongoClient)
 	countryRepository := store.NewMongoCountryRepository(conf, mongoClient)
 	cityRepository := store.NewMongoCityRepository(conf, mongoClient)
+	itemRepository := store.NewMongoItemRepository(conf, mongoClient)
 
 	supplierService := services.NewSupplierService(supplierRepository)
 	countryService := services.NewCountryService(countryRepository)
 	cityService := services.NewCityService(cityRepository)
+	itemService := services.NewItemService(itemRepository)
 
 	// Setup chi router
 	r := chi.NewRouter()
@@ -57,10 +59,12 @@ func init() {
 	rSupplier := rest.SupplierHandler{Service: supplierService}
 	rCountry := rest.CountryHandler{Service: countryService}
 	rCity := rest.CityHandler{Service: cityService}
+	rItem := rest.ItemHandler{Service: itemService}
 
 	r.Mount("/suppliers", rSupplier.NewRouter())
 	r.Mount("/countries", rCountry.NewRouter())
 	r.Mount("/country-states", rCity.NewRouter())
+	r.Mount("/items", rItem.NewRouter())
 
 	chiLambda = chiadapter.New(r)
 }

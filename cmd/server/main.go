@@ -35,12 +35,14 @@ func main() {
 	supplierRepository := store.NewMongoSupplierRepository(conf, mongoClient)
 	countryRepository := store.NewMongoCountryRepository(conf, mongoClient)
 	cityRepository := store.NewMongoCityRepository(conf, mongoClient)
+	itemRepository := store.NewMongoItemRepository(conf, mongoClient)
 
 	supplierService := services.NewSupplierService(supplierRepository)
 	countryService := services.NewCountryService(countryRepository)
 	cityService := services.NewCityService(cityRepository)
+	itemService := services.NewItemService(itemRepository)
 
-	server := http.NewServer(conf, supplierService, countryService, cityService)
+	server := http.NewServer(conf, supplierService, countryService, cityService, itemService)
 
 	server.Run()
 }

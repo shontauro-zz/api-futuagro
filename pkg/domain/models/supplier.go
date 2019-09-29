@@ -15,6 +15,7 @@ type Supplier struct {
 	DocumentNumber string             `json:"documentNumber" bson:"documentNumber"`
 	City           string             `json:"city" bson:"city"`
 	Email          string             `json:"email" bson:"email"`
+	AddressLine1   string             `json:"addressLine1" bson:"address"`
 	PhoneNumber    string             `json:"phoneNumber" bson:"phoneNumber"`
 	Products       string             `json:"products" bson:"products"`
 	RecordStatus   string             `json:"recordStatus"`

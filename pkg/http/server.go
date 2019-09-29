@@ -45,6 +45,7 @@ func NewServer(
 	supplierServ *services.SupplierService,
 	countryServ *services.CountryService,
 	cityServ *services.CityService,
+	itemServ *services.ItemService,
 ) *Server {
 	server := &Server{
 		config:          confPtr,
@@ -75,10 +76,12 @@ func NewServer(
 	rSupplier := rest.SupplierHandler{Service: supplierServ}
 	rCountry := rest.CountryHandler{Service: countryServ}
 	rCity := rest.CityHandler{Service: cityServ}
+	rItem := rest.ItemHandler{Service: itemServ}
 
 	r.Mount("/suppliers", rSupplier.NewRouter())
 	r.Mount("/countries", rCountry.NewRouter())
 	r.Mount("/country-states", rCity.NewRouter())
+	r.Mount("/items", rItem.NewRouter())
 
 	server.router = r
 	return server
