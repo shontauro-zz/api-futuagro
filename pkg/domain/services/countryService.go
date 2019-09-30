@@ -7,7 +7,7 @@ import (
 	"futuagro.com/pkg/store"
 )
 
-// CountryService represent the country's domain service contract
+// CountryService implements use cases methods and domain business logic for countries
 type CountryService struct {
 	repository *store.MongoCountryRepository
 }
@@ -27,7 +27,7 @@ func (s *CountryService) CreateCountry(country *dtos.CountryDto) (string, error)
 	return s.repository.Insert(country)
 }
 
-// UpdateCountryByID update a country's data by its id
+// UpdateCountryByID update a country data by its id
 func (s *CountryService) UpdateCountryByID(id string, country *dtos.CountryDto) (*models.Country, error) {
 	return s.repository.Update(id, country)
 }

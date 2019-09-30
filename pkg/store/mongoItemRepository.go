@@ -151,7 +151,7 @@ func (repo *MongoItemRepository) Delete(id string) (bool, error) {
 	return result.DeletedCount > 0, nil
 }
 
-// NewMongoItemRepository returns a new instance of a MongoDB country repository.
+// NewMongoItemRepository returns a new instance of a mongodb repository for items.
 func NewMongoItemRepository(confPtr *config.Config, clientPtr *mongo.Client) *MongoItemRepository {
 	return &MongoItemRepository{databaseName: confPtr.Database.Name, client: clientPtr}
 }

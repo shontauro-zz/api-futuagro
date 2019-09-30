@@ -7,7 +7,7 @@ import (
 	"futuagro.com/pkg/store"
 )
 
-// ItemService represent the item's domain service contract
+// ItemService implements use cases methods and domain business logic for items
 type ItemService struct {
 	repository *store.MongoItemRepository
 }
@@ -27,13 +27,13 @@ func (s *ItemService) CreateItem(dto *dtos.ItemDto) (string, error) {
 	return s.repository.Insert(dto)
 }
 
-// UpdateItemByID update an item's data by its id
+// UpdateItemByID update an item data by its id
 func (s *ItemService) UpdateItemByID(id string, itemDto *dtos.ItemDto) (*models.Item, error) {
 	return s.repository.Update(id, itemDto)
 }
 
-// DeleteItemID delete an item by id
-func (s *ItemService) DeleteItemID(id string) (bool, error) {
+// DeleteItemByID delete an item by id
+func (s *ItemService) DeleteItemByID(id string) (bool, error) {
 	return s.repository.Delete(id)
 }
 

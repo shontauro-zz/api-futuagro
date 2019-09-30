@@ -6,7 +6,7 @@ import (
 	"futuagro.com/pkg/store"
 )
 
-// SupplierService represent the supplier's domain service contract
+// SupplierService implements use cases methods and domain business logic for suppliers
 type SupplierService struct {
 	repository *store.MongoSupplierRepository
 }
@@ -26,7 +26,7 @@ func (s *SupplierService) CreateSupplier(supplier *models.Supplier) (string, err
 	return s.repository.Insert(supplier)
 }
 
-// UpdateSupplierByID update a supplier's data by its id
+// UpdateSupplierByID update a supplier data by its id
 func (s *SupplierService) UpdateSupplierByID(id string, supplier *models.Supplier) (*models.Supplier, error) {
 	return s.repository.Update(id, supplier)
 }

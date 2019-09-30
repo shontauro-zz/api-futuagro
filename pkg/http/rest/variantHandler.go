@@ -9,55 +9,57 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// ItemHandler return a handler for the Rest API of a item
-type ItemHandler struct {
-	Service *services.ItemService
+// VariantHandler return a handler for the Rest API of a item
+type VariantHandler struct {
+	Service *services.VariantService
 }
 
 // NewRouter export a router configured with a supplier's routes
-func (h *ItemHandler) NewRouter() chi.Router {
+func (h *VariantHandler) NewRouter() chi.Router {
 	r := chi.NewRouter()
 
-	r.Method(http.MethodGet, "/", rootHandler(h.findAllItems))
-	r.Method(http.MethodPost, "/", rootHandler(h.createItem))
+	r.Method(http.MethodPost, "/", rootHandler(h.createVariant))
+	r.Method(http.MethodGet, "/", rootHandler(h.findVariantsByItemID))
 
 	// Subroutes:
-	r.Route("/{itemID}", func(r chi.Router) {
-		r.Method(http.MethodGet, "/", rootHandler(h.findItemByID))
-		r.Method(http.MethodPut, "/", rootHandler(h.updateItemID))
-		r.Method(http.MethodDelete, "/", rootHandler(h.deleteItemByID))
+	r.Route("/{variantID}", func(r chi.Router) {
+		r.Method(http.MethodGet, "/", rootHandler(h.findOneVariantByItemID))
+		r.Method(http.MethodPut, "/", rootHandler(h.updateVariant))
+		r.Method(http.MethodDelete, "/", rootHandler(h.deleteVariant))
 	})
 
 	return r
 }
 
-func (h *ItemHandler) findAllItems(w http.ResponseWriter, r *http.Request) error {
-	items, err := h.Service.FindAllItems()
+func (h *VariantHandler) findVariantsByItemID(w http.ResponseWriter, r *http.Request) error {
+	itemID := chi.URLParam(r, "itemID")
+	variants, err := h.Service.FindVariantsByItemID(itemID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(items); err != nil {
+	if err := json.NewEncoder(w).Encode(variants); err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	return nil
 }
 
-func (h *ItemHandler) createItem(w http.ResponseWriter, r *http.Request) error {
-	var payload dtos.ItemDto
+func (h *VariantHandler) createVariant(w http.ResponseWriter, r *http.Request) error {
+	itemID := chi.URLParam(r, "itemID")
+	var payload dtos.VariantDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
 	}
 
-	result, err := h.Service.CreateItem(&payload)
+	result, err := h.Service.CreateVariant(itemID, &payload)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
-	supplier, err := h.Service.FindItemByID(result)
+	supplier, err := h.Service.FindVariantByID(result)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
@@ -70,39 +72,41 @@ func (h *ItemHandler) createItem(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (h *ItemHandler) findItemByID(w http.ResponseWriter, r *http.Request) error {
+func (h *VariantHandler) findOneVariantByItemID(w http.ResponseWriter, r *http.Request) error {
 	itemID := chi.URLParam(r, "itemID")
-	item, err := h.Service.FindItemByID(itemID)
+	variantID := chi.URLParam(r, "variantID")
+	variant, err := h.Service.FindOneVariantByItemID(itemID, variantID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
-	if item == nil {
-		return NewNotFoundError(nil, "Item Not Found")
+	if variant == nil {
+		return NewNotFoundError(nil, "Variant Not Found")
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(item); err != nil {
+	if err := json.NewEncoder(w).Encode(variant); err != nil {
 		return NewAPIError(err, 500, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 	return nil
 }
 
-func (h *ItemHandler) updateItemID(w http.ResponseWriter, r *http.Request) error {
+func (h *VariantHandler) updateVariant(w http.ResponseWriter, r *http.Request) error {
 	itemID := chi.URLParam(r, "itemID")
-	var payload dtos.ItemDto
+	variantID := chi.URLParam(r, "variantID")
+	var payload dtos.VariantDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
 	}
 
-	supplier, err := h.Service.UpdateItemByID(itemID, &payload)
+	supplier, err := h.Service.UpdateVariant(itemID, variantID, &payload)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	if supplier == nil {
-		return NewNotFoundError(nil, "Item Not Found")
+		return NewNotFoundError(nil, "Variant Not Found")
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -113,14 +117,15 @@ func (h *ItemHandler) updateItemID(w http.ResponseWriter, r *http.Request) error
 	return nil
 }
 
-func (h *ItemHandler) deleteItemByID(w http.ResponseWriter, r *http.Request) error {
+func (h *VariantHandler) deleteVariant(w http.ResponseWriter, r *http.Request) error {
 	itemID := chi.URLParam(r, "itemID")
-	result, err := h.Service.DeleteItemByID(itemID)
+	variantID := chi.URLParam(r, "variantID")
+	result, err := h.Service.DeleteVariant(itemID, variantID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 	if result == false {
-		return NewNotFoundError(nil, "Item Not Found")
+		return NewNotFoundError(nil, "Variant Not Found")
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
