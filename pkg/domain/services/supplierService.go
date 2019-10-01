@@ -2,6 +2,7 @@
 package services
 
 import (
+	"futuagro.com/pkg/domain/dtos"
 	"futuagro.com/pkg/domain/models"
 	"futuagro.com/pkg/store"
 )
@@ -22,12 +23,12 @@ func (s *SupplierService) FindAllSuppliers() ([]*models.Supplier, error) {
 }
 
 // CreateSupplier create a new supplier record
-func (s *SupplierService) CreateSupplier(supplier *models.Supplier) (string, error) {
+func (s *SupplierService) CreateSupplier(supplier *dtos.SupplierDto) (string, error) {
 	return s.repository.Insert(supplier)
 }
 
 // UpdateSupplierByID update a supplier data by its id
-func (s *SupplierService) UpdateSupplierByID(id string, supplier *models.Supplier) (*models.Supplier, error) {
+func (s *SupplierService) UpdateSupplierByID(id string, supplier *dtos.SupplierDto) (*models.Supplier, error) {
 	return s.repository.Update(id, supplier)
 }
 

@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"futuagro.com/pkg/config"
+	"futuagro.com/pkg/domain/dtos"
+	"futuagro.com/pkg/domain/enums"
 	"futuagro.com/pkg/domain/models"
 	"github.com/pkg/errors"
 	"go.mongodb.org/mongo-driver/bson"
@@ -71,18 +73,21 @@ func (repository *MongoSupplierRepository) FindAll() ([]*models.Supplier, error)
 }
 
 // Insert a new supplier into mongodb
-func (repository *MongoSupplierRepository) Insert(supplier *models.Supplier) (string, error) {
+func (repository *MongoSupplierRepository) Insert(supplier *dtos.SupplierDto) (string, error) {
 	collection := repository.client.Database(repository.databaseName).Collection(supplierCollection)
+	now := primitive.DateTime(time.Now().UnixNano() / 1e6)
 	data := bson.D{
 		primitive.E{Key: "name", Value: supplier.Name},
+		primitive.E{Key: "surname", Value: supplier.Surname},
 		primitive.E{Key: "documentType", Value: supplier.DocumentType},
 		primitive.E{Key: "documentNumber", Value: supplier.DocumentNumber},
-		primitive.E{Key: "city", Value: supplier.City},
+		primitive.E{Key: "cityId", Value: supplier.CityID},
 		primitive.E{Key: "email", Value: supplier.Email},
+		primitive.E{Key: "addressLine1", Value: supplier.AddressLine1},
 		primitive.E{Key: "phoneNumber", Value: supplier.PhoneNumber},
-		primitive.E{Key: "products", Value: supplier.Products},
-		primitive.E{Key: "createdAt", Value: primitive.DateTime(time.Now().UnixNano() / 1e6)},
-		primitive.E{Key: "updatedAt", Value: primitive.DateTime(time.Now().UnixNano() / 1e6)},
+		primitive.E{Key: "createdAt", Value: now},
+		primitive.E{Key: "updatedAt", Value: now},
+		primitive.E{Key: "recordStatus", Value: enums.Active},
 	}
 	result, err := collection.InsertOne(context.TODO(), data)
 	if err != nil {
@@ -92,7 +97,7 @@ func (repository *MongoSupplierRepository) Insert(supplier *models.Supplier) (st
 }
 
 // Update a supplier's document by its id in mongodb
-func (repository *MongoSupplierRepository) Update(id string, supplier *models.Supplier) (*models.Supplier, error) {
+func (repository *MongoSupplierRepository) Update(id string, supplier *dtos.SupplierDto) (*models.Supplier, error) {
 	collection := repository.client.Database(repository.databaseName).Collection(supplierCollection)
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -103,12 +108,13 @@ func (repository *MongoSupplierRepository) Update(id string, supplier *models.Su
 		Key: "$set",
 		Value: bson.D{
 			primitive.E{Key: "name", Value: supplier.Name},
+			primitive.E{Key: "surname", Value: supplier.Surname},
 			primitive.E{Key: "documentType", Value: supplier.DocumentType},
 			primitive.E{Key: "documentNumber", Value: supplier.DocumentNumber},
-			primitive.E{Key: "city", Value: supplier.City},
+			primitive.E{Key: "cityId", Value: supplier.CityID},
 			primitive.E{Key: "email", Value: supplier.Email},
+			primitive.E{Key: "AddressLine1", Value: supplier.AddressLine1},
 			primitive.E{Key: "phoneNumber", Value: supplier.PhoneNumber},
-			primitive.E{Key: "products", Value: supplier.Products},
 			primitive.E{Key: "updatedAt", Value: primitive.DateTime(time.Now().UnixNano() / 1e6)},
 		},
 	}}

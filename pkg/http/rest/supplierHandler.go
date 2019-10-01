@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"futuagro.com/pkg/domain/models"
+	"futuagro.com/pkg/domain/dtos"
 	"futuagro.com/pkg/domain/services"
 	"github.com/go-chi/chi"
 )
@@ -47,7 +47,7 @@ func (h *SupplierHandler) findAllSuppliers(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *SupplierHandler) createSupplier(w http.ResponseWriter, r *http.Request) error {
-	var payload models.Supplier
+	var payload dtos.SupplierDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
 	}
@@ -91,7 +91,7 @@ func (h *SupplierHandler) findSupplierByID(w http.ResponseWriter, r *http.Reques
 
 func (h *SupplierHandler) updateSupplierByID(w http.ResponseWriter, r *http.Request) error {
 	supplierID := chi.URLParam(r, "supplierID")
-	var payload models.Supplier
+	var payload dtos.SupplierDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
 	}

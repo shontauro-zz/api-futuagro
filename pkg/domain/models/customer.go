@@ -4,7 +4,7 @@ import "time"
 
 // Customer represent the data of a customer
 type Customer struct {
-	ID             string    `json:"id"`
+	ID             string    `json:"_id"`
 	Name           string    `json:"name"`
 	DocumentType   string    `json:"documentType"`
 	DocumentNumber string    `json:"documentNumber"`

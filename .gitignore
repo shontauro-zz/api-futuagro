@@ -2,6 +2,7 @@
 *.bak_*
 .futuragro.vpp.lck
 /docs/futuragro.vpp.vbak
+/docs/futuragro.vpp.vbak~*
 
 # Serverless directories
 .serverless

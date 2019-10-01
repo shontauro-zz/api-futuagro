@@ -7,7 +7,7 @@ import (
 
 //Country represents the data of a country
 type Country struct {
-	ID           primitive.ObjectID      `json:"id" bson:"_id"`
+	ID           primitive.ObjectID      `json:"_id" bson:"_id"`
 	CountryName  string                  `json:"countryName,omitempty" bson:"countryName"`
 	CountryCode  string                  `json:"countryCode,omitempty" bson:"countryCode"`
 	States       []CountryState          `json:"states,omitempty" bson:"states"`
@@ -16,7 +16,7 @@ type Country struct {
 
 // CountryState represent the data of country state
 type CountryState struct {
-	ID           primitive.ObjectID      `json:"id" bson:"_id"`
+	ID           primitive.ObjectID      `json:"_id" bson:"_id"`
 	StateName    string                  `json:"stateName,omitempty" bson:"stateName"`
 	RecordStatus *enums.EnumRecordStatus `json:"recordStatus,omitempty" bson:"recordStatus"`
 }
