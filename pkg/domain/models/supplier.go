@@ -19,6 +19,7 @@ type Supplier struct {
 	Email          string                  `json:"email,omitempty" bson:"email"`
 	AddressLine1   string                  `json:"addressLine1,omitempty" bson:"addressLine1"`
 	PhoneNumber    string                  `json:"phoneNumber,omitempty" bson:"phoneNumber"`
+	Crops          []Crop                  `json:"crops,omitempty" bson:"crops"`
 	RecordStatus   *enums.EnumRecordStatus `json:"recordStatus" bson:"recordStatus"`
 	CreatedAt      time.Time               `json:"createdAt" bson:"createdAt"`
 	UpdatedAt      time.Time               `json:"updatedAt" bson:"updatedAt"`
@@ -26,11 +27,11 @@ type Supplier struct {
 
 //Crop represent the data of a crop
 type Crop struct {
-	ID           primitive.ObjectID `json:"_id" bson:"_id"`
-	CityID       string             `json:"cityId" bson:"cityId"`
-	PlantingDate time.Time          `json:"plantingDate" bson:"plantingDate"`
-	HarvestDate  time.Time          `json:"harvestDate" bson:"harvestDate"`
-	VariantID    *Variant           `json:"variantId" bson:"variantId"`
-	CreatedAt    time.Time          `json:"createdAt" bson:"createdAt"`
-	UpdatedAt    time.Time          `json:"updatedAt" bson:"updatedAt"`
+	ID           primitive.ObjectID  `json:"_id" bson:"_id"`
+	CityID       string              `json:"cityId" bson:"cityId"`
+	PlantingDate time.Time           `json:"plantingDate" bson:"plantingDate"`
+	HarvestDate  time.Time           `json:"harvestDate" bson:"harvestDate"`
+	VariantID    *primitive.ObjectID `json:"variantId" bson:"variantId"`
+	CreatedAt    time.Time           `json:"createdAt" bson:"createdAt"`
+	UpdatedAt    time.Time           `json:"updatedAt" bson:"updatedAt"`
 }

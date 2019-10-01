@@ -1,10 +1,13 @@
 package dtos
 
 import (
+	"time"
+
 	"futuagro.com/pkg/domain/enums"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// SupplierDto represents a DTO for a supplier object
+// SupplierDto represents a DTO for a supplier document
 type SupplierDto struct {
 	Name           string                  `json:"name" bson:"name"`
 	Surname        string                  `json:"surname" bson:"surname"`
@@ -15,4 +18,12 @@ type SupplierDto struct {
 	AddressLine1   string                  `json:"addressLine1,omitempty" bson:"addressLine1"`
 	PhoneNumber    string                  `json:"phoneNumber,omitempty" bson:"phoneNumber"`
 	RecordStatus   *enums.EnumRecordStatus `json:"recordStatus" bson:"recordStatus"`
+}
+
+// CropDto represents a DTO for a crop sub-document
+type CropDto struct {
+	CityID       string              `json:"cityId" bson:"cityId"`
+	PlantingDate time.Time           `json:"plantingDate" bson:"plantingDate"`
+	HarvestDate  time.Time           `json:"harvestDate" bson:"harvestDate"`
+	VariantID    *primitive.ObjectID `json:"variantId" bson:"variantId"`
 }

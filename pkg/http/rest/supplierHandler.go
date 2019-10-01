@@ -26,6 +26,10 @@ func (h *SupplierHandler) NewRouter() chi.Router {
 		r.Method(http.MethodGet, "/", rootHandler(h.findSupplierByID))
 		r.Method(http.MethodPut, "/", rootHandler(h.updateSupplierByID))
 		r.Method(http.MethodDelete, "/", rootHandler(h.deleteSupplierByID))
+
+		r.Route("/crops", func(r chi.Router) {
+			r.Method(http.MethodPost, "/", rootHandler(h.addCrop))
+		})
 	})
 
 	return r
@@ -109,6 +113,28 @@ func (h *SupplierHandler) updateSupplierByID(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(supplier); err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	}
+	return nil
+}
+
+func (h *SupplierHandler) addCrop(w http.ResponseWriter, r *http.Request) error {
+	supplierID := chi.URLParam(r, "supplierID")
+	var payload dtos.CropDto
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
+	}
+	supplier, err := h.Service.AddCrop(supplierID, payload)
+	if err != nil {
+		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	}
+	if supplier == nil {
+		return NewNotFoundError(nil, "Supplier Not Found")
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(supplier); err != nil {
+		return NewAPIError(err, 500, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 	return nil
 }

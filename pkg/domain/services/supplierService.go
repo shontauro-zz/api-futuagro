@@ -37,6 +37,11 @@ func (s *SupplierService) DeleteSupplier(id string) (bool, error) {
 	return s.repository.Delete(id)
 }
 
+// AddCrop add a new Crop to a supplier
+func (s *SupplierService) AddCrop(supplierID string, cropDto dtos.CropDto) (*models.Supplier, error) {
+	return s.repository.InsertCrop(supplierID, cropDto)
+}
+
 // NewSupplierService creates a supplier service with necessary dependencies.
 func NewSupplierService(supplierRepository *store.MongoSupplierRepository) *SupplierService {
 	return &SupplierService{supplierRepository}
