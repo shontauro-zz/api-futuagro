@@ -22,8 +22,9 @@ type SupplierDto struct {
 
 // CropDto represents a DTO for a crop sub-document
 type CropDto struct {
-	CityID       string              `json:"cityId" bson:"cityId"`
-	PlantingDate time.Time           `json:"plantingDate" bson:"plantingDate"`
-	HarvestDate  time.Time           `json:"harvestDate" bson:"harvestDate"`
-	VariantID    *primitive.ObjectID `json:"variantId" bson:"variantId"`
+	CountryStateID string              `json:"countryStateId" bson:"countryStateId"`
+	CityID         string              `json:"cityId" bson:"cityId"`
+	PlantingDate   time.Time           `json:"plantingDate" bson:"plantingDate"`
+	HarvestDate    time.Time           `json:"harvestDate" bson:"harvestDate"`
+	VariantID      *primitive.ObjectID `json:"variantId" bson:"variantId"`
 }

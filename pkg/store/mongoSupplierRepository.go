@@ -47,6 +47,133 @@ func (repo *MongoSupplierRepository) FindByID(id string) (*models.Supplier, erro
 	return supplier, nil
 }
 
+// PopulateSupplierByID return a supplier with the crops property populated with the variant data
+func (repo *MongoSupplierRepository) PopulateSupplierByID(id string) (*models.Supplier, error) {
+	collection := repo.client.Database(repo.databaseName).Collection(supplierCollection)
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
+	}
+	var pipeline = []primitive.D{
+		bson.D{
+			primitive.E{
+				Key: "$match",
+				Value: bson.D{
+					primitive.E{Key: "_id", Value: objID},
+				},
+			},
+		},
+		bson.D{
+			primitive.E{
+				Key: "$unwind",
+				Value: bson.D{
+					primitive.E{Key: "path", Value: "$crops"},
+				},
+			},
+		},
+		bson.D{
+			primitive.E{
+				Key: "$lookup",
+				Value: bson.D{
+					primitive.E{Key: "from", Value: "variants"},
+					primitive.E{Key: "localField", Value: "crops.variantId"},
+					primitive.E{Key: "foreignField", Value: "_id"},
+					primitive.E{Key: "as", Value: "crops.variant"},
+				},
+			},
+		},
+		bson.D{
+			primitive.E{
+				Key: "$unwind",
+				Value: bson.D{
+					primitive.E{Key: "path", Value: "$crops.variant"},
+				},
+			},
+		},
+		bson.D{
+			primitive.E{
+				Key: "$lookup",
+				Value: bson.D{
+					primitive.E{Key: "from", Value: "items"},
+					primitive.E{Key: "localField", Value: "crops.variant.itemId"},
+					primitive.E{Key: "foreignField", Value: "_id"},
+					primitive.E{Key: "as", Value: "crops.variant.item"},
+				},
+			},
+		},
+		bson.D{
+			primitive.E{
+				Key: "$unwind",
+				Value: bson.D{
+					primitive.E{Key: "path", Value: "$crops.variant.item"},
+				},
+			},
+		},
+		bson.D{
+			primitive.E{
+				Key: "$group",
+				Value: bson.D{
+					primitive.E{Key: "_id", Value: "$_id"},
+					primitive.E{Key: "name", Value: bson.D{
+						primitive.E{Key: "$first", Value: "$name"},
+					}},
+					primitive.E{Key: "surname", Value: bson.D{
+						primitive.E{Key: "$first", Value: "$surname"},
+					}},
+					primitive.E{Key: "documentType", Value: bson.D{
+						primitive.E{Key: "$first", Value: "$documentType"},
+					}},
+					primitive.E{Key: "documentNumber", Value: bson.D{
+						primitive.E{Key: "$first", Value: "$documentNumber"},
+					}},
+					primitive.E{Key: "cityId", Value: bson.D{
+						primitive.E{Key: "$first", Value: "$cityId"},
+					}},
+					primitive.E{Key: "email", Value: bson.D{
+						primitive.E{Key: "$first", Value: "$email"},
+					}},
+					primitive.E{Key: "addressLine1", Value: bson.D{
+						primitive.E{Key: "$first", Value: "$addressLine1"},
+					}},
+					primitive.E{Key: "phoneNumber", Value: bson.D{
+						primitive.E{Key: "$first", Value: "$phoneNumber"},
+					}},
+					primitive.E{Key: "createdAt", Value: bson.D{
+						primitive.E{Key: "$first", Value: "$createdAt"},
+					}},
+					primitive.E{Key: "updatedAt", Value: bson.D{
+						primitive.E{Key: "$first", Value: "$updatedAt"},
+					}},
+					primitive.E{Key: "recordStatus", Value: bson.D{
+						primitive.E{Key: "$first", Value: "$recordStatus"},
+					}},
+					primitive.E{Key: "crops", Value: bson.D{
+						primitive.E{Key: "$push", Value: "$crops"},
+					}},
+				},
+			},
+		},
+	}
+	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
+	defer cancel()
+	cursor, err := collection.Aggregate(ctx, pipeline, nil)
+
+	var supplier *models.Supplier
+	for cursor.Next(context.TODO()) {
+		if err := cursor.Decode(&supplier); err != nil {
+			log.Printf("Error decoding a supplier: %v", err)
+		}
+	}
+	err = cursor.Err()
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, errors.Wrap(err, "Error decoding a supplier in PopulateSupplierByID")
+	}
+	return supplier, nil
+}
+
 // FindAll returns a list of suppliers from mongodb
 func (repo *MongoSupplierRepository) FindAll() ([]*models.Supplier, error) {
 	collection := repo.client.Database(repo.databaseName).Collection(supplierCollection)
@@ -162,6 +289,7 @@ func (repo *MongoSupplierRepository) InsertCrop(supplierID string, cropDto dtos.
 	now := primitive.DateTime(time.Now().UnixNano() / 1e6)
 	data := bson.D{
 		primitive.E{Key: "_id", Value: primitive.NewObjectID()},
+		primitive.E{Key: "countryStateId", Value: cropDto.CountryStateID},
 		primitive.E{Key: "cityId", Value: cropDto.CityID},
 		primitive.E{Key: "plantingDate", Value: cropDto.PlantingDate},
 		primitive.E{Key: "harvestDate", Value: cropDto.HarvestDate},

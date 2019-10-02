@@ -17,6 +17,11 @@ func (s *SupplierService) FindSupplierByID(id string) (*models.Supplier, error) 
 	return s.repository.FindByID(id)
 }
 
+// PopulateSupplierByID return a supplier with the crops property populated with the variant data
+func (s *SupplierService) PopulateSupplierByID(id string) (*models.Supplier, error) {
+	return s.repository.PopulateSupplierByID(id)
+}
+
 // FindAllSuppliers returns a list of suppliers
 func (s *SupplierService) FindAllSuppliers() ([]*models.Supplier, error) {
 	return s.repository.FindAll()

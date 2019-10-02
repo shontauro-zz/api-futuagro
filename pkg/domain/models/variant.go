@@ -13,8 +13,8 @@ type Variant struct {
 	Name         string                  `json:"name" bson:"name"`
 	LName        string                  `json:"lname" bson:"lname"`
 	ItemID       primitive.ObjectID      `json:"itemId" bson:"itemId"`
-	Item         *Item                   `json:"item,omitempty" bson:"item"`
 	CreatedAt    time.Time               `json:"createdAt" bson:"createdAt"`
 	UpdatedAt    time.Time               `json:"updatedAt" bson:"updatedAt"`
 	RecordStatus *enums.EnumRecordStatus `json:"recordStatus" bson:"recordStatus"`
+	Item         *Item                   `json:"item,omitempty" bson:"item"`
 }
