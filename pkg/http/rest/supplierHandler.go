@@ -56,12 +56,7 @@ func (h *SupplierHandler) createSupplier(w http.ResponseWriter, r *http.Request)
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
 	}
 
-	result, err := h.Service.CreateSupplier(&payload)
-	if err != nil {
-		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
-	}
-
-	supplier, err := h.Service.FindSupplierByID(result)
+	supplier, err := h.Service.CreateSupplier(&payload)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
@@ -76,8 +71,7 @@ func (h *SupplierHandler) createSupplier(w http.ResponseWriter, r *http.Request)
 
 func (h *SupplierHandler) findSupplierByID(w http.ResponseWriter, r *http.Request) error {
 	supplierID := chi.URLParam(r, "supplierID")
-	supplier, err := h.Service.FindSupplierByID(supplierID)
-	// supplier, err := h.Service.PopulateSupplierByID(supplierID)
+	supplier, err := h.Service.PopulateSupplierByID(supplierID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}

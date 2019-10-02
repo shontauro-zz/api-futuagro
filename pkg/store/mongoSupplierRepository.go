@@ -68,6 +68,7 @@ func (repo *MongoSupplierRepository) PopulateSupplierByID(id string) (*models.Su
 				Key: "$unwind",
 				Value: bson.D{
 					primitive.E{Key: "path", Value: "$crops"},
+					primitive.E{Key: "preserveNullAndEmptyArrays", Value: true},
 				},
 			},
 		},
@@ -87,6 +88,7 @@ func (repo *MongoSupplierRepository) PopulateSupplierByID(id string) (*models.Su
 				Key: "$unwind",
 				Value: bson.D{
 					primitive.E{Key: "path", Value: "$crops.variant"},
+					primitive.E{Key: "preserveNullAndEmptyArrays", Value: true},
 				},
 			},
 		},
@@ -106,6 +108,7 @@ func (repo *MongoSupplierRepository) PopulateSupplierByID(id string) (*models.Su
 				Key: "$unwind",
 				Value: bson.D{
 					primitive.E{Key: "path", Value: "$crops.variant.item"},
+					primitive.E{Key: "preserveNullAndEmptyArrays", Value: true},
 				},
 			},
 		},
@@ -164,6 +167,7 @@ func (repo *MongoSupplierRepository) PopulateSupplierByID(id string) (*models.Su
 			log.Printf("Error decoding a supplier: %v", err)
 		}
 	}
+	log.Printf("papu %v", supplier)
 	err = cursor.Err()
 	if err != nil {
 		if err == mongo.ErrNoDocuments {

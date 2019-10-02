@@ -28,13 +28,37 @@ func (s *SupplierService) FindAllSuppliers() ([]*models.Supplier, error) {
 }
 
 // CreateSupplier create a new supplier record
-func (s *SupplierService) CreateSupplier(supplier *dtos.SupplierDto) (string, error) {
-	return s.repository.Insert(supplier)
+func (s *SupplierService) CreateSupplier(dto *dtos.SupplierDto) (*models.Supplier, error) {
+	result, err := s.repository.Insert(dto)
+	if err != nil {
+		return nil, err
+	}
+
+	supplier, err := s.repository.FindByID(result)
+	if err != nil {
+		return nil, err
+	}
+
+	return supplier, nil
 }
 
 // UpdateSupplierByID update a supplier data by its id
-func (s *SupplierService) UpdateSupplierByID(id string, supplier *dtos.SupplierDto) (*models.Supplier, error) {
-	return s.repository.Update(id, supplier)
+func (s *SupplierService) UpdateSupplierByID(id string, dto *dtos.SupplierDto) (*models.Supplier, error) {
+	result, err := s.repository.Update(id, dto)
+	if err != nil {
+		return nil, err
+	}
+
+	if result == nil {
+		return nil, nil
+	}
+
+	supplier, err := s.repository.PopulateSupplierByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return supplier, nil
 }
 
 // DeleteSupplier delete a suplier by id
@@ -44,7 +68,22 @@ func (s *SupplierService) DeleteSupplier(id string) (bool, error) {
 
 // AddCrop add a new Crop to a supplier
 func (s *SupplierService) AddCrop(supplierID string, cropDto dtos.CropDto) (*models.Supplier, error) {
-	return s.repository.InsertCrop(supplierID, cropDto)
+
+	result, err := s.repository.InsertCrop(supplierID, cropDto)
+	if err != nil {
+		return nil, err
+	}
+
+	if result == nil {
+		return nil, nil
+	}
+
+	supplier, err := s.repository.PopulateSupplierByID(supplierID)
+	if err != nil {
+		return nil, err
+	}
+
+	return supplier, nil
 }
 
 // NewSupplierService creates a supplier service with necessary dependencies.
