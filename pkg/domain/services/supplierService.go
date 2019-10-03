@@ -66,26 +66,6 @@ func (s *SupplierService) DeleteSupplier(id string) (bool, error) {
 	return s.repository.Delete(id)
 }
 
-// AddCrop add a new Crop to a supplier
-func (s *SupplierService) AddCrop(supplierID string, cropDto dtos.CropDto) (*models.Supplier, error) {
-
-	result, err := s.repository.InsertCrop(supplierID, cropDto)
-	if err != nil {
-		return nil, err
-	}
-
-	if result == nil {
-		return nil, nil
-	}
-
-	supplier, err := s.repository.PopulateSupplierByID(supplierID)
-	if err != nil {
-		return nil, err
-	}
-
-	return supplier, nil
-}
-
 // NewSupplierService creates a supplier service with necessary dependencies.
 func NewSupplierService(supplierRepository *store.MongoSupplierRepository) *SupplierService {
 	return &SupplierService{supplierRepository}

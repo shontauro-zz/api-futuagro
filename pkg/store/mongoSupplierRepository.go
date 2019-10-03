@@ -69,7 +69,6 @@ func (repo *MongoSupplierRepository) PopulateSupplierByID(id string) (*models.Su
 			log.Printf("Error decoding a supplier: %v", err)
 		}
 	}
-	log.Printf("papu %v", supplier)
 	err = cursor.Err()
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -187,52 +186,14 @@ func (repo *MongoSupplierRepository) Delete(id string) (bool, error) {
 	return result.DeletedCount > 0, nil
 }
 
-//InsertCrop register a new crop for a supplier
-func (repo *MongoSupplierRepository) InsertCrop(supplierID string, cropDto dtos.CropDto) (*models.Supplier, error) {
-	collection := repo.client.Database(repo.databaseName).Collection(supplierCollection)
-	objID, err := primitive.ObjectIDFromHex(supplierID)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
-	}
-	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
-	now := primitive.DateTime(time.Now().UnixNano() / 1e6)
-	data := bson.D{
-		primitive.E{Key: "_id", Value: primitive.NewObjectID()},
-		primitive.E{Key: "countryStateId", Value: cropDto.CountryStateID},
-		primitive.E{Key: "cityId", Value: cropDto.CityID},
-		primitive.E{Key: "plantingDate", Value: cropDto.PlantingDate},
-		primitive.E{Key: "harvestDate", Value: cropDto.HarvestDate},
-		primitive.E{Key: "variantId", Value: cropDto.VariantID},
-		primitive.E{Key: "createdAt", Value: now},
-		primitive.E{Key: "updatedAt", Value: now},
-	}
-	update := bson.D{
-		primitive.E{
-			Key: "$push",
-			Value: bson.D{
-				primitive.E{Key: "crops", Value: data},
-			},
-		},
-	}
-	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
-	defer cancel()
-	updateOpts := options.FindOneAndUpdate().SetReturnDocument(options.After)
-	result := collection.FindOneAndUpdate(ctx, filter, update, updateOpts)
-	if result.Err() != nil {
-		return nil, result.Err()
-	}
-	var updatedSupplier *models.Supplier
-	if err := result.Decode(&updatedSupplier); err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, nil
-		}
-		return nil, errors.Wrap(err, "Error decoding a supplier")
-	}
-	return updatedSupplier, nil
-}
-
 func buildStandardSupplierPipeline() []bson.M {
 	return []bson.M{
+		bson.M{"$lookup": bson.M{
+			"from":         "crops",
+			"localField":   "_id",
+			"foreignField": "supplierId",
+			"as":           "crops",
+		}},
 		bson.M{"$addFields": bson.M{
 			"hasCrops": bson.M{
 				"$size": bson.M{
@@ -261,6 +222,16 @@ func buildStandardSupplierPipeline() []bson.M {
 			"path":                       "$crops.variant.item",
 			"preserveNullAndEmptyArrays": true,
 		}},
+		bson.M{"$lookup": bson.M{
+			"from":         "cities",
+			"localField":   "cityId",
+			"foreignField": "_id",
+			"as":           "city",
+		}},
+		bson.M{"$unwind": bson.M{
+			"path":                       "$city",
+			"preserveNullAndEmptyArrays": true,
+		}},
 		bson.M{"$group": bson.M{
 			"_id": "$_id",
 			"name": bson.M{
@@ -275,8 +246,8 @@ func buildStandardSupplierPipeline() []bson.M {
 			"documentNumber": bson.M{
 				"$first": "$documentNumber",
 			},
-			"cityId": bson.M{
-				"$first": "$cityId",
+			"city": bson.M{
+				"$first": "$city",
 			},
 			"email": bson.M{
 				"$first": "$email",
@@ -309,7 +280,7 @@ func buildStandardSupplierPipeline() []bson.M {
 			"surname":        1,
 			"documentType":   1,
 			"documentNumber": 1,
-			"cityId":         1,
+			"city":           1,
 			"email":          1,
 			"addressLine1":   1,
 			"phoneNumber":    1,
