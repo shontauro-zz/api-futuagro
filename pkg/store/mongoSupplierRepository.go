@@ -54,109 +54,11 @@ func (repo *MongoSupplierRepository) PopulateSupplierByID(id string) (*models.Su
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
 	}
-	var pipeline = []primitive.D{
-		bson.D{
-			primitive.E{
-				Key: "$match",
-				Value: bson.D{
-					primitive.E{Key: "_id", Value: objID},
-				},
-			},
-		},
-		bson.D{
-			primitive.E{
-				Key: "$unwind",
-				Value: bson.D{
-					primitive.E{Key: "path", Value: "$crops"},
-					primitive.E{Key: "preserveNullAndEmptyArrays", Value: true},
-				},
-			},
-		},
-		bson.D{
-			primitive.E{
-				Key: "$lookup",
-				Value: bson.D{
-					primitive.E{Key: "from", Value: "variants"},
-					primitive.E{Key: "localField", Value: "crops.variantId"},
-					primitive.E{Key: "foreignField", Value: "_id"},
-					primitive.E{Key: "as", Value: "crops.variant"},
-				},
-			},
-		},
-		bson.D{
-			primitive.E{
-				Key: "$unwind",
-				Value: bson.D{
-					primitive.E{Key: "path", Value: "$crops.variant"},
-					primitive.E{Key: "preserveNullAndEmptyArrays", Value: true},
-				},
-			},
-		},
-		bson.D{
-			primitive.E{
-				Key: "$lookup",
-				Value: bson.D{
-					primitive.E{Key: "from", Value: "items"},
-					primitive.E{Key: "localField", Value: "crops.variant.itemId"},
-					primitive.E{Key: "foreignField", Value: "_id"},
-					primitive.E{Key: "as", Value: "crops.variant.item"},
-				},
-			},
-		},
-		bson.D{
-			primitive.E{
-				Key: "$unwind",
-				Value: bson.D{
-					primitive.E{Key: "path", Value: "$crops.variant.item"},
-					primitive.E{Key: "preserveNullAndEmptyArrays", Value: true},
-				},
-			},
-		},
-		bson.D{
-			primitive.E{
-				Key: "$group",
-				Value: bson.D{
-					primitive.E{Key: "_id", Value: "$_id"},
-					primitive.E{Key: "name", Value: bson.D{
-						primitive.E{Key: "$first", Value: "$name"},
-					}},
-					primitive.E{Key: "surname", Value: bson.D{
-						primitive.E{Key: "$first", Value: "$surname"},
-					}},
-					primitive.E{Key: "documentType", Value: bson.D{
-						primitive.E{Key: "$first", Value: "$documentType"},
-					}},
-					primitive.E{Key: "documentNumber", Value: bson.D{
-						primitive.E{Key: "$first", Value: "$documentNumber"},
-					}},
-					primitive.E{Key: "cityId", Value: bson.D{
-						primitive.E{Key: "$first", Value: "$cityId"},
-					}},
-					primitive.E{Key: "email", Value: bson.D{
-						primitive.E{Key: "$first", Value: "$email"},
-					}},
-					primitive.E{Key: "addressLine1", Value: bson.D{
-						primitive.E{Key: "$first", Value: "$addressLine1"},
-					}},
-					primitive.E{Key: "phoneNumber", Value: bson.D{
-						primitive.E{Key: "$first", Value: "$phoneNumber"},
-					}},
-					primitive.E{Key: "createdAt", Value: bson.D{
-						primitive.E{Key: "$first", Value: "$createdAt"},
-					}},
-					primitive.E{Key: "updatedAt", Value: bson.D{
-						primitive.E{Key: "$first", Value: "$updatedAt"},
-					}},
-					primitive.E{Key: "recordStatus", Value: bson.D{
-						primitive.E{Key: "$first", Value: "$recordStatus"},
-					}},
-					primitive.E{Key: "crops", Value: bson.D{
-						primitive.E{Key: "$push", Value: "$crops"},
-					}},
-				},
-			},
-		},
+	var pipeline = []bson.M{
+		bson.M{"$match": bson.M{"_id": objID}},
 	}
+	pipeline = append(pipeline, buildStandardSupplierPipeline()...)
+
 	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
 	defer cancel()
 	cursor, err := collection.Aggregate(ctx, pipeline, nil)
@@ -181,7 +83,10 @@ func (repo *MongoSupplierRepository) PopulateSupplierByID(id string) (*models.Su
 // FindAll returns a list of suppliers from mongodb
 func (repo *MongoSupplierRepository) FindAll() ([]*models.Supplier, error) {
 	collection := repo.client.Database(repo.databaseName).Collection(supplierCollection)
-	cursor, err := collection.Find(context.Background(), bson.D{{}})
+	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
+	defer cancel()
+	var pipeline = buildStandardSupplierPipeline()
+	cursor, err := collection.Aggregate(ctx, pipeline, nil)
 	defer cursor.Close(context.TODO())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error finding all suppliers")
@@ -324,6 +229,98 @@ func (repo *MongoSupplierRepository) InsertCrop(supplierID string, cropDto dtos.
 		return nil, errors.Wrap(err, "Error decoding a supplier")
 	}
 	return updatedSupplier, nil
+}
+
+func buildStandardSupplierPipeline() []bson.M {
+	return []bson.M{
+		bson.M{"$addFields": bson.M{
+			"hasCrops": bson.M{
+				"$size": bson.M{
+					"$ifNull": bson.A{"$crops", bson.A{}}}}}},
+		bson.M{"$unwind": bson.M{
+			"path":                       "$crops",
+			"preserveNullAndEmptyArrays": true,
+		}},
+		bson.M{"$lookup": bson.M{
+			"from":         "variants",
+			"localField":   "crops.variantId",
+			"foreignField": "_id",
+			"as":           "crops.variant",
+		}},
+		bson.M{"$unwind": bson.M{
+			"path":                       "$crops.variant",
+			"preserveNullAndEmptyArrays": true,
+		}},
+		bson.M{"$lookup": bson.M{
+			"from":         "items",
+			"localField":   "crops.variant.itemId",
+			"foreignField": "_id",
+			"as":           "crops.variant.item",
+		}},
+		bson.M{"$unwind": bson.M{
+			"path":                       "$crops.variant.item",
+			"preserveNullAndEmptyArrays": true,
+		}},
+		bson.M{"$group": bson.M{
+			"_id": "$_id",
+			"name": bson.M{
+				"$first": "$name",
+			},
+			"surname": bson.M{
+				"$first": "$surname",
+			},
+			"documentType": bson.M{
+				"$first": "$documentType",
+			},
+			"documentNumber": bson.M{
+				"$first": "$documentNumber",
+			},
+			"cityId": bson.M{
+				"$first": "$cityId",
+			},
+			"email": bson.M{
+				"$first": "$email",
+			},
+			"addressLine1": bson.M{
+				"$first": "$addressLine1",
+			},
+			"phoneNumber": bson.M{
+				"$first": "$phoneNumber",
+			},
+			"createdAt": bson.M{
+				"$first": "$createdAt",
+			},
+			"updatedAt": bson.M{
+				"$first": "$updatedAt",
+			},
+			"recordStatus": bson.M{
+				"$first": "$recordStatus",
+			},
+			"hasCrops": bson.M{
+				"$first": "$hasCrops",
+			},
+			"crops": bson.M{
+				"$push": "$crops",
+			},
+		}},
+		bson.M{"$project": bson.M{
+			"_id":            1,
+			"name":           1,
+			"surname":        1,
+			"documentType":   1,
+			"documentNumber": 1,
+			"cityId":         1,
+			"email":          1,
+			"addressLine1":   1,
+			"phoneNumber":    1,
+			"createdAt":      1,
+			"updatedAt":      1,
+			"recordStatus":   1,
+			"crops": bson.M{
+				"$cond": bson.A{bson.M{"$eq": bson.A{"$hasCrops", 0}}, bson.A{}, "$crops"},
+			},
+		}},
+	}
 }
 
 // NewMongoSupplierRepository returns a new instance of a MongoDB supplier repo.
