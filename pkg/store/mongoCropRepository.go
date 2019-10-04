@@ -44,6 +44,7 @@ func (repo *MongoCropRepository) FindByID(id string) (*models.Crop, error) {
 		if err := cursor.Decode(&crop); err != nil {
 			log.Printf("Error decoding a crop: %v", err)
 		}
+		log.Printf("papu %v ", crop)
 	}
 	err = cursor.Err()
 	if err != nil {
@@ -60,7 +61,7 @@ func (repo *MongoCropRepository) FindAll() ([]*models.Crop, error) {
 	collection := repo.client.Database(repo.databaseName).Collection(cropCollection)
 	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
 	defer cancel()
-	var pipeline = buildStandardSupplierPipeline()
+	var pipeline = buildStandardCropPipeline()
 	cursor, err := collection.Aggregate(ctx, pipeline, nil)
 	defer cursor.Close(context.TODO())
 	if err != nil {
@@ -76,9 +77,10 @@ func (repo *MongoCropRepository) FindAll() ([]*models.Crop, error) {
 			results = append(results, &crop)
 		}
 	}
+
 	err = cursor.Err()
 	if err != nil {
-		return nil, errors.Wrap(err, "Error finding all suppliers")
+		return nil, errors.Wrap(err, "Error finding all crops")
 	}
 	return results, nil
 }
@@ -117,7 +119,7 @@ func (repo *MongoCropRepository) Update(id string, dto *dtos.CropDto) (*models.C
 		"harvestDate":  dto.HarvestDate,
 		"variantId":    dto.VariantID,
 		"supplierId":   dto.SupplierID,
-		"updatedAt":    primitive.DateTime(time.Now().UnixNano() / 1e6),
+		"updatedAt":    time.Now(),
 	}}
 
 	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
@@ -194,29 +196,10 @@ func buildStandardCropPipeline() []bson.M {
 			"path":                       "$supplier",
 			"preserveNullAndEmptyArrays": true,
 		}},
-		bson.M{"$group": bson.M{
-			"_id": "$_id",
-			"city": bson.M{
-				"$first": "$city",
-			},
-			"plantingDate": bson.M{
-				"$first": "$plantingDate",
-			},
-			"harvestDate": bson.M{
-				"$first": "$harvestDate",
-			},
-			"variant": bson.M{
-				"$first": "$variant",
-			},
-			"supplier": bson.M{
-				"$first": "$supplier",
-			},
-			"createdAt": bson.M{
-				"$first": "$createdAt",
-			},
-			"updatedAt": bson.M{
-				"$first": "$updatedAt",
-			},
+		bson.M{"$project": bson.M{
+			"variantId":  0,
+			"supplierId": 0,
+			"cityId":     0,
 		}},
 	}
 }

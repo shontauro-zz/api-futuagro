@@ -14,7 +14,7 @@ type SupplierHandler struct {
 	Service *services.SupplierService
 }
 
-// NewRouter export a router configured with a supplier's routes
+// NewRouter export a router configured with supplier routes
 func (h *SupplierHandler) NewRouter() chi.Router {
 	r := chi.NewRouter()
 
