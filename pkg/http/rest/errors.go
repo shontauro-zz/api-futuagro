@@ -62,3 +62,13 @@ func NewNotFoundError(err error, message string) error {
 		Message: message,
 	}
 }
+
+// NewUnauthorizedError create an error instance for an http error 401
+func NewUnauthorizedError(err error, message string) error {
+	return &APIError{
+		Cause:   err,
+		Status:  http.StatusUnauthorized,
+		Code:    http.StatusUnauthorized,
+		Message: message,
+	}
+}

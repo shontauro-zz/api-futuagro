@@ -47,8 +47,10 @@ func main() {
 	variantService := services.NewVariantService(variantRepository)
 	cropService := services.NewCropService(cropRepository)
 	userService := services.NewUserService(userRepository)
+	authService := services.NewAuthService(userRepository)
 
-	server := http.NewServer(conf, supplierService, countryService, cityService, itemService, variantService, cropService, userService)
+	server := http.NewServer(conf, supplierService, countryService, cityService,
+		itemService, variantService, cropService, userService, authService)
 
 	server.Run()
 }

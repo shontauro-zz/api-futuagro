@@ -44,7 +44,6 @@ func (repo *MongoCropRepository) FindByID(id string) (*models.Crop, error) {
 		if err := cursor.Decode(&crop); err != nil {
 			log.Printf("Error decoding a crop: %v", err)
 		}
-		log.Printf("papu %v ", crop)
 	}
 	err = cursor.Err()
 	if err != nil {

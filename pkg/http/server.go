@@ -22,6 +22,7 @@ type Server struct {
 	variantService  *services.VariantService
 	cropService     *services.CropService
 	userService     *services.UserService
+	authService     *services.AuthService
 	router          chi.Router
 }
 
@@ -54,6 +55,7 @@ func NewServer(
 	variantServ *services.VariantService,
 	cropServ *services.CropService,
 	userServ *services.UserService,
+	authServ *services.AuthService,
 ) *Server {
 	server := &Server{
 		config:          confPtr,
@@ -64,6 +66,7 @@ func NewServer(
 		variantService:  variantServ,
 		cropService:     cropServ,
 		userService:     userServ,
+		authService:     authServ,
 	}
 
 	r := chi.NewRouter()
@@ -93,6 +96,7 @@ func NewServer(
 	rVariant := rest.VariantHandler{Service: variantServ}
 	rCrop := rest.CropHandler{Service: cropServ}
 	rUser := rest.UserHandler{Service: userServ}
+	rAuth := rest.AuthHandler{Service: authServ}
 
 	r.Mount("/suppliers", rSupplier.NewRouter())
 	r.Mount("/countries", rCountry.NewRouter())
@@ -101,6 +105,7 @@ func NewServer(
 	r.Mount("/items/{itemID}/variants", rVariant.NewRouter())
 	r.Mount("/crops", rCrop.NewRouter())
 	r.Mount("/users", rUser.NewRouter())
+	r.Mount("/auth", rAuth.NewRouter())
 
 	server.router = r
 	return server

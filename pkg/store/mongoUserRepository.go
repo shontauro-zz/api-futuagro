@@ -27,12 +27,31 @@ type MongoUserRepository struct {
 
 // FindByID returns an user by its ID from mongodb
 func (repo *MongoUserRepository) FindByID(id string) (*models.User, error) {
-	collection := repo.client.Database(repo.databaseName).Collection(userCollection)
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
 	}
 	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
+	user, err := repo.findOneUserBy(filter)
+	if user != nil {
+		user.HashedPassword = ""
+	}
+	return user, nil
+}
+
+// FindByEmail returns an user by its ID from mongodb
+func (repo *MongoUserRepository) FindByEmail(email string) (*models.User, error) {
+
+	filter := bson.D{primitive.E{Key: "email", Value: email}}
+	user, err := repo.findOneUserBy(filter)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (repo *MongoUserRepository) findOneUserBy(filter interface{}) (*models.User, error) {
+	collection := repo.client.Database(repo.databaseName).Collection(userCollection)
 	result := collection.FindOne(context.TODO(), filter)
 	if result.Err() != nil {
 		return nil, result.Err()
@@ -45,7 +64,6 @@ func (repo *MongoUserRepository) FindByID(id string) (*models.User, error) {
 		}
 		return nil, errors.Wrap(err, "Error decoding an user")
 	}
-	user.HashedPassword = ""
 	return user, nil
 }
 
