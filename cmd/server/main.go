@@ -38,6 +38,7 @@ func main() {
 	itemRepository := store.NewMongoItemRepository(conf, mongoClient)
 	variantRepository := store.NewMongoVariantRepository(conf, mongoClient)
 	cropRepository := store.NewMongoCropRepository(conf, mongoClient)
+	userRepository := store.NewMongoUserRepository(conf, mongoClient)
 
 	supplierService := services.NewSupplierService(supplierRepository)
 	countryService := services.NewCountryService(countryRepository)
@@ -45,8 +46,9 @@ func main() {
 	itemService := services.NewItemService(itemRepository)
 	variantService := services.NewVariantService(variantRepository)
 	cropService := services.NewCropService(cropRepository)
+	userService := services.NewUserService(userRepository)
 
-	server := http.NewServer(conf, supplierService, countryService, cityService, itemService, variantService, cropService)
+	server := http.NewServer(conf, supplierService, countryService, cityService, itemService, variantService, cropService, userService)
 
 	server.Run()
 }

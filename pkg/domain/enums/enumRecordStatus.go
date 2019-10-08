@@ -50,7 +50,6 @@ func (s *EnumRecordStatus) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	// Note that if the string cannot be found then it will be set to the zero value, 'Created' in this case.
 	value, ok := toID[j]
 	if !ok {
 		return errors.New("Invalid RecordStatus value")

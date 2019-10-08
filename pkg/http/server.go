@@ -17,6 +17,11 @@ type Server struct {
 	config          *config.Config
 	supplierService *services.SupplierService
 	countryService  *services.CountryService
+	cityService     *services.CityService
+	itemService     *services.ItemService
+	variantService  *services.VariantService
+	cropService     *services.CropService
+	userService     *services.UserService
 	router          chi.Router
 }
 
@@ -48,11 +53,17 @@ func NewServer(
 	itemServ *services.ItemService,
 	variantServ *services.VariantService,
 	cropServ *services.CropService,
+	userServ *services.UserService,
 ) *Server {
 	server := &Server{
 		config:          confPtr,
 		supplierService: supplierServ,
 		countryService:  countryServ,
+		cityService:     cityServ,
+		itemService:     itemServ,
+		variantService:  variantServ,
+		cropService:     cropServ,
+		userService:     userServ,
 	}
 
 	r := chi.NewRouter()
@@ -81,6 +92,7 @@ func NewServer(
 	rItem := rest.ItemHandler{Service: itemServ}
 	rVariant := rest.VariantHandler{Service: variantServ}
 	rCrop := rest.CropHandler{Service: cropServ}
+	rUser := rest.UserHandler{Service: userServ}
 
 	r.Mount("/suppliers", rSupplier.NewRouter())
 	r.Mount("/countries", rCountry.NewRouter())
@@ -88,6 +100,7 @@ func NewServer(
 	r.Mount("/items", rItem.NewRouter())
 	r.Mount("/items/{itemID}/variants", rVariant.NewRouter())
 	r.Mount("/crops", rCrop.NewRouter())
+	r.Mount("/users", rUser.NewRouter())
 
 	server.router = r
 	return server
