@@ -186,7 +186,7 @@ func buildStandardCropPipeline() []bson.M {
 			"preserveNullAndEmptyArrays": true,
 		}},
 		bson.M{"$lookup": bson.M{
-			"from":         "suppliers",
+			"from":         "users",
 			"localField":   "supplierId",
 			"foreignField": "_id",
 			"as":           "supplier",
@@ -196,9 +196,10 @@ func buildStandardCropPipeline() []bson.M {
 			"preserveNullAndEmptyArrays": true,
 		}},
 		bson.M{"$project": bson.M{
-			"variantId":  0,
-			"supplierId": 0,
-			"cityId":     0,
+			"variantId":               0,
+			"supplierId":              0,
+			"cityId":                  0,
+			"supplier.hashedPassword": 0,
 		}},
 	}
 }

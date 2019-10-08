@@ -16,7 +16,7 @@ type Crop struct {
 	VariantID    *primitive.ObjectID `json:"variantId,omitempty" bson:"variantId"`
 	Variant      *Variant            `json:"variant,omitempty" bson:"variant"`
 	SupplierID   *primitive.ObjectID `json:"supplierId,omitempty" bson:"supplierId"`
-	Supplier     *Supplier           `json:"supplier,omitempty" bson:"supplier"`
+	Supplier     *User               `json:"supplier,omitempty" bson:"supplier"`
 	CreatedAt    time.Time           `json:"createdAt" bson:"createdAt"`
 	UpdatedAt    time.Time           `json:"updatedAt" bson:"updatedAt"`
 }
