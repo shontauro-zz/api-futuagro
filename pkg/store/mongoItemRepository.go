@@ -33,15 +33,23 @@ func (repo *MongoItemRepository) FindByID(id string) (*models.Item, error) {
 		return nil, errors.Wrap(err, "Error parsing ObjectID from hex")
 	}
 
-	filter := bson.D{primitive.E{Key: "_id", Value: objdID}}
-	result := collection.FindOne(context.TODO(), filter)
-
-	if result.Err() != nil {
-		return nil, result.Err()
+	var pipeline = []bson.M{
+		bson.M{"$match": bson.M{"_id": objdID}},
 	}
+	pipeline = append(pipeline, buildStandardItemPipeline()...)
+
+	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
+	defer cancel()
+	cursor, err := collection.Aggregate(ctx, pipeline, nil)
 
 	var item *models.Item
-	if err := result.Decode(&item); err != nil {
+	for cursor.Next(context.TODO()) {
+		if err := cursor.Decode(&item); err != nil {
+			log.Printf("Error decoding an item: %v", err)
+		}
+	}
+	err = cursor.Err()
+	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
@@ -53,7 +61,11 @@ func (repo *MongoItemRepository) FindByID(id string) (*models.Item, error) {
 // FindAll return a list of items from mongodb
 func (repo *MongoItemRepository) FindAll() ([]*models.Item, error) {
 	collection := repo.client.Database(repo.databaseName).Collection(itemCollection)
-	cursor, err := collection.Find(context.Background(), bson.D{})
+	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
+	defer cancel()
+	var pipeline = buildStandardItemPipeline()
+
+	cursor, err := collection.Aggregate(ctx, pipeline, nil)
 	defer cursor.Close(context.TODO())
 	if err != nil {
 		return nil, errors.Wrap(err, "Error finding all items")
@@ -62,7 +74,7 @@ func (repo *MongoItemRepository) FindAll() ([]*models.Item, error) {
 	for cursor.Next(context.TODO()) {
 		var item models.Item
 		if err := cursor.Decode(&item); err != nil {
-			log.Printf("Error decoding an Item: %v", err)
+			log.Printf("Error decoding an Item on FindAll(): %v", err)
 		} else {
 			results = append(results, &item)
 		}
@@ -149,6 +161,17 @@ func (repo *MongoItemRepository) Delete(id string) (bool, error) {
 		return false, errors.Wrap(err, "Error deleting an item")
 	}
 	return result.DeletedCount > 0, nil
+}
+
+func buildStandardItemPipeline() []bson.M {
+	return []bson.M{
+		bson.M{"$lookup": bson.M{
+			"from":         "variants",
+			"localField":   "_id",
+			"foreignField": "itemId",
+			"as":           "variants",
+		}},
+	}
 }
 
 // NewMongoItemRepository returns a new instance of a mongodb repository for items.
