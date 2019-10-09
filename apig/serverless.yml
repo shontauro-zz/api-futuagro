@@ -16,6 +16,7 @@ service: futuagro-api-rest
 plugins:
   - serverless-dotenv-plugin
   - serverless-offline
+  - serverless-prune-plugin
 frameworkVersion: '>=1.28.0 <2.0.0'
 
 provider:
@@ -33,6 +34,9 @@ provider:
 custom:
   dotenv:
     basePath: ../
+  prune:
+    automatic: true
+    number: 3
 
 package:
   exclude:
