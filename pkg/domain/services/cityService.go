@@ -7,7 +7,7 @@ import (
 	"futuagro.com/pkg/store"
 )
 
-// CityService represent the country's domain service contract
+// CityService implements use cases methods and domain business logic for cities
 type CityService struct {
 	repository *store.MongoCityRepository
 }
@@ -28,13 +28,13 @@ func (s *CityService) FindAllCitiesByCountryState(stateID string) ([]*models.Cit
 }
 
 // CreateCity create a new city record
-func (s *CityService) CreateCity(stateID string, city *dtos.CityDto) (string, error) {
-	return s.repository.Insert(stateID, city)
+func (s *CityService) CreateCity(stateID string, dto *dtos.CityDto) (string, error) {
+	return s.repository.Insert(stateID, dto)
 }
 
-// UpdateCityByID update a city's data by its id
-func (s *CityService) UpdateCityByID(stateID string, cityID string, cityDto *dtos.CityDto) (*models.City, error) {
-	return s.repository.Update(stateID, cityID, cityDto)
+// UpdateCityByID update a city data by its id
+func (s *CityService) UpdateCityByID(stateID string, cityID string, dto *dtos.CityDto) (*models.City, error) {
+	return s.repository.Update(stateID, cityID, dto)
 }
 
 // DeleteCityByID delete a city by id

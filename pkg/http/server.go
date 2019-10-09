@@ -17,6 +17,12 @@ type Server struct {
 	config          *config.Config
 	supplierService *services.SupplierService
 	countryService  *services.CountryService
+	cityService     *services.CityService
+	itemService     *services.ItemService
+	variantService  *services.VariantService
+	cropService     *services.CropService
+	userService     *services.UserService
+	authService     *services.AuthService
 	router          chi.Router
 }
 
@@ -45,11 +51,22 @@ func NewServer(
 	supplierServ *services.SupplierService,
 	countryServ *services.CountryService,
 	cityServ *services.CityService,
+	itemServ *services.ItemService,
+	variantServ *services.VariantService,
+	cropServ *services.CropService,
+	userServ *services.UserService,
+	authServ *services.AuthService,
 ) *Server {
 	server := &Server{
 		config:          confPtr,
 		supplierService: supplierServ,
 		countryService:  countryServ,
+		cityService:     cityServ,
+		itemService:     itemServ,
+		variantService:  variantServ,
+		cropService:     cropServ,
+		userService:     userServ,
+		authService:     authServ,
 	}
 
 	r := chi.NewRouter()
@@ -75,10 +92,20 @@ func NewServer(
 	rSupplier := rest.SupplierHandler{Service: supplierServ}
 	rCountry := rest.CountryHandler{Service: countryServ}
 	rCity := rest.CityHandler{Service: cityServ}
+	rItem := rest.ItemHandler{Service: itemServ}
+	rVariant := rest.VariantHandler{Service: variantServ}
+	rCrop := rest.CropHandler{Service: cropServ}
+	rUser := rest.UserHandler{Service: userServ}
+	rAuth := rest.AuthHandler{Service: authServ}
 
 	r.Mount("/suppliers", rSupplier.NewRouter())
 	r.Mount("/countries", rCountry.NewRouter())
 	r.Mount("/country-states", rCity.NewRouter())
+	r.Mount("/items", rItem.NewRouter())
+	r.Mount("/items/{itemID}/variants", rVariant.NewRouter())
+	r.Mount("/crops", rCrop.NewRouter())
+	r.Mount("/users", rUser.NewRouter())
+	r.Mount("/auth", rAuth.NewRouter())
 
 	server.router = r
 	return server

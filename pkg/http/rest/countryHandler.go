@@ -148,7 +148,7 @@ func (h *CountryHandler) createState(w http.ResponseWriter, r *http.Request) err
 	}
 
 	if country == nil {
-		return NewNotFoundError(nil, "CountryState Not Found")
+		return NewNotFoundError(nil, "Country Not Found")
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

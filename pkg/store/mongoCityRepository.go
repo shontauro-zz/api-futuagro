@@ -69,7 +69,7 @@ func (repo *MongoCityRepository) FindCitiesByCountryState(stateID string) ([]*mo
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
 	}
-	filter := bson.D{primitive.E{Key: "countryState", Value: objID}}
+	filter := bson.D{primitive.E{Key: "countryStateId", Value: objID}}
 	cursor, err := collection.Find(context.Background(), filter)
 	cities, err := parseListOfCityDocs(cursor)
 	if err != nil {
@@ -88,7 +88,7 @@ func (repo *MongoCityRepository) Insert(stateID string, dto *dtos.CityDto) (stri
 	active := enums.Active
 	data := bson.D{
 		primitive.E{Key: "cityName", Value: dto.CityName},
-		primitive.E{Key: "countryState", Value: objStateID},
+		primitive.E{Key: "countryStateId", Value: objStateID},
 		primitive.E{Key: "recordStatus", Value: &active},
 	}
 
@@ -156,7 +156,7 @@ func (repo *MongoCityRepository) Delete(stateID string, cityID string) (bool, er
 	}
 	filter := bson.D{
 		primitive.E{Key: "_id", Value: objCityID},
-		primitive.E{Key: "countryState", Value: objStateID},
+		primitive.E{Key: "countryStateId", Value: objStateID},
 	}
 	result, err := collection.DeleteOne(context.Background(), filter)
 	if err != nil {

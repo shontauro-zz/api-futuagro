@@ -7,8 +7,8 @@ import (
 
 // City represent the data of a city
 type City struct {
-	ID           primitive.ObjectID      `json:"id" bson:"_id"`
-	CityName     string                  `json:"cityName" bson:"cityName"`
-	CountryState primitive.ObjectID      `json:"countryState" bson:"countryState"`
-	RecordStatus *enums.EnumRecordStatus `json:"recordStatus" bson:"recordStatus"`
+	ID             primitive.ObjectID      `json:"_id" bson:"_id"`
+	CityName       string                  `json:"cityName" bson:"cityName"`
+	CountryStateID primitive.ObjectID      `json:"countryStateId" bson:"countryStateId"`
+	RecordStatus   *enums.EnumRecordStatus `json:"recordStatus" bson:"recordStatus"`
 }

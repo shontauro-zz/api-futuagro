@@ -2,11 +2,12 @@
 package services
 
 import (
+	"futuagro.com/pkg/domain/dtos"
 	"futuagro.com/pkg/domain/models"
 	"futuagro.com/pkg/store"
 )
 
-// SupplierService represent the supplier's domain service contract
+// SupplierService implements use cases methods and domain business logic for suppliers
 type SupplierService struct {
 	repository *store.MongoSupplierRepository
 }
@@ -16,19 +17,48 @@ func (s *SupplierService) FindSupplierByID(id string) (*models.Supplier, error) 
 	return s.repository.FindByID(id)
 }
 
+// PopulateSupplierByID return a supplier with the crops property populated with the variant data
+func (s *SupplierService) PopulateSupplierByID(id string) (*models.Supplier, error) {
+	return s.repository.PopulateSupplierByID(id)
+}
+
 // FindAllSuppliers returns a list of suppliers
 func (s *SupplierService) FindAllSuppliers() ([]*models.Supplier, error) {
 	return s.repository.FindAll()
 }
 
 // CreateSupplier create a new supplier record
-func (s *SupplierService) CreateSupplier(supplier *models.Supplier) (string, error) {
-	return s.repository.Insert(supplier)
+func (s *SupplierService) CreateSupplier(dto *dtos.SupplierDto) (*models.Supplier, error) {
+	result, err := s.repository.Insert(dto)
+	if err != nil {
+		return nil, err
+	}
+
+	supplier, err := s.repository.FindByID(result)
+	if err != nil {
+		return nil, err
+	}
+
+	return supplier, nil
 }
 
-// UpdateSupplierByID update a supplier's data by its id
-func (s *SupplierService) UpdateSupplierByID(id string, supplier *models.Supplier) (*models.Supplier, error) {
-	return s.repository.Update(id, supplier)
+// UpdateSupplierByID update a supplier data by its id
+func (s *SupplierService) UpdateSupplierByID(id string, dto *dtos.SupplierDto) (*models.Supplier, error) {
+	result, err := s.repository.Update(id, dto)
+	if err != nil {
+		return nil, err
+	}
+
+	if result == nil {
+		return nil, nil
+	}
+
+	supplier, err := s.repository.PopulateSupplierByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	return supplier, nil
 }
 
 // DeleteSupplier delete a suplier by id

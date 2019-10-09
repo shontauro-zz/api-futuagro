@@ -18,6 +18,12 @@ offline:
 	@make clean build
 	sls offline --stage dev
 
+sls-prune-dev:
+	sls prune -n 5 --stage dev --aws-profile futuagro --env development --verbose
+
+sls-prune-prod:
+	sls prune -n 5 --stage prod --aws-profile futuagro --env production --verbose
+
 gomodgen:
 	chmod u+x gomod.sh
 	./gomod.sh

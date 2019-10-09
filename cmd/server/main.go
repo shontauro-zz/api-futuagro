@@ -35,12 +35,22 @@ func main() {
 	supplierRepository := store.NewMongoSupplierRepository(conf, mongoClient)
 	countryRepository := store.NewMongoCountryRepository(conf, mongoClient)
 	cityRepository := store.NewMongoCityRepository(conf, mongoClient)
+	itemRepository := store.NewMongoItemRepository(conf, mongoClient)
+	variantRepository := store.NewMongoVariantRepository(conf, mongoClient)
+	cropRepository := store.NewMongoCropRepository(conf, mongoClient)
+	userRepository := store.NewMongoUserRepository(conf, mongoClient)
 
 	supplierService := services.NewSupplierService(supplierRepository)
 	countryService := services.NewCountryService(countryRepository)
 	cityService := services.NewCityService(cityRepository)
+	itemService := services.NewItemService(itemRepository)
+	variantService := services.NewVariantService(variantRepository)
+	cropService := services.NewCropService(cropRepository)
+	userService := services.NewUserService(userRepository)
+	authService := services.NewAuthService(userRepository)
 
-	server := http.NewServer(conf, supplierService, countryService, cityService)
+	server := http.NewServer(conf, supplierService, countryService, cityService,
+		itemService, variantService, cropService, userService, authService)
 
 	server.Run()
 }

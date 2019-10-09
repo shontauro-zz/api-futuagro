@@ -14,42 +14,62 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/crypto/bcrypt"
 )
 
-const supplierCollection string = "suppliers"
+const userCollection string = "users"
 
-//MongoSupplierRepository a repo for saving suppliers into a mongo database
-type MongoSupplierRepository struct {
+//MongoUserRepository a repo for saving users into a mongo database
+type MongoUserRepository struct {
 	databaseName string
 	client       *mongo.Client
 }
 
-// FindByID returns a supplier by its ID from mongodb
-func (repo *MongoSupplierRepository) FindByID(id string) (*models.Supplier, error) {
-	collection := repo.client.Database(repo.databaseName).Collection(supplierCollection)
+// FindByID returns an user by its ID from mongodb
+func (repo *MongoUserRepository) FindByID(id string) (*models.User, error) {
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
 	}
 	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
+	user, err := repo.findOneUserBy(filter)
+	if user != nil {
+		user.HashedPassword = ""
+	}
+	return user, nil
+}
+
+// FindByEmail returns an user by its ID from mongodb
+func (repo *MongoUserRepository) FindByEmail(email string) (*models.User, error) {
+
+	filter := bson.D{primitive.E{Key: "email", Value: email}}
+	user, err := repo.findOneUserBy(filter)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+func (repo *MongoUserRepository) findOneUserBy(filter interface{}) (*models.User, error) {
+	collection := repo.client.Database(repo.databaseName).Collection(userCollection)
 	result := collection.FindOne(context.TODO(), filter)
 	if result.Err() != nil {
 		return nil, result.Err()
 	}
 
-	var supplier *models.Supplier
-	if err := result.Decode(&supplier); err != nil {
+	var user *models.User
+	if err := result.Decode(&user); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, errors.Wrap(err, "Error decoding a supplier")
+		return nil, errors.Wrap(err, "Error decoding an user")
 	}
-	return supplier, nil
+	return user, nil
 }
 
-// PopulateSupplierByID return a supplier with the crops property populated with the variant data
-func (repo *MongoSupplierRepository) PopulateSupplierByID(id string) (*models.Supplier, error) {
-	collection := repo.client.Database(repo.databaseName).Collection(supplierCollection)
+// PopulateUserByID return an user with the crops property populated with the variants data
+func (repo *MongoUserRepository) PopulateUserByID(id string) (*models.User, error) {
+	collection := repo.client.Database(repo.databaseName).Collection(userCollection)
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
@@ -57,16 +77,16 @@ func (repo *MongoSupplierRepository) PopulateSupplierByID(id string) (*models.Su
 	var pipeline = []bson.M{
 		bson.M{"$match": bson.M{"_id": objID}},
 	}
-	pipeline = append(pipeline, buildStandardSupplierPipeline()...)
+	pipeline = append(pipeline, buildStandardUserPipeline()...)
 
 	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
 	defer cancel()
 	cursor, err := collection.Aggregate(ctx, pipeline, nil)
 
-	var supplier *models.Supplier
+	var user *models.User
 	for cursor.Next(context.TODO()) {
-		if err := cursor.Decode(&supplier); err != nil {
-			log.Printf("Error decoding a supplier: %v", err)
+		if err := cursor.Decode(&user); err != nil {
+			log.Printf("Error decoding an user: %v", err)
 		}
 	}
 	err = cursor.Err()
@@ -74,66 +94,74 @@ func (repo *MongoSupplierRepository) PopulateSupplierByID(id string) (*models.Su
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, errors.Wrap(err, "Error decoding a supplier in PopulateSupplierByID")
+		return nil, errors.Wrap(err, "Error decoding an user in PopulateUserByID")
 	}
-	return supplier, nil
+	return user, nil
 }
 
-// FindAll returns a list of suppliers from mongodb
-func (repo *MongoSupplierRepository) FindAll() ([]*models.Supplier, error) {
-	collection := repo.client.Database(repo.databaseName).Collection(supplierCollection)
+// FindAll returns a list of users from mongodb
+func (repo *MongoUserRepository) FindAll() ([]*models.User, error) {
+	collection := repo.client.Database(repo.databaseName).Collection(userCollection)
 	ctx, cancel := context.WithTimeout(context.TODO(), 15*time.Second)
 	defer cancel()
-	var pipeline = buildStandardSupplierPipeline()
+	var pipeline = buildStandardUserPipeline()
 	cursor, err := collection.Aggregate(ctx, pipeline, nil)
 	defer cursor.Close(context.TODO())
 	if err != nil {
-		return nil, errors.Wrap(err, "Error finding all suppliers")
+		return nil, errors.Wrap(err, "Error finding all users")
 	}
 
-	var results []*models.Supplier
+	var results []*models.User
 	for cursor.Next(context.TODO()) {
-		var supplier models.Supplier
-		if err := cursor.Decode(&supplier); err != nil {
-			log.Printf("Error decoding a supplier on FindAll(): %v", err)
+		var user models.User
+		if err := cursor.Decode(&user); err != nil {
+			log.Printf("Error decoding an user on FindAll(): %v", err)
 		} else {
-			results = append(results, &supplier)
+			results = append(results, &user)
 		}
 	}
 	err = cursor.Err()
 	if err != nil {
-		return nil, errors.Wrap(err, "Error finding all suppliers")
+		return nil, errors.Wrap(err, "Error finding all users")
 	}
 	return results, nil
 }
 
-// Insert a new supplier into mongodb
-func (repo *MongoSupplierRepository) Insert(supplier *dtos.SupplierDto) (string, error) {
-	collection := repo.client.Database(repo.databaseName).Collection(supplierCollection)
+// Insert a new user into mongodb
+func (repo *MongoUserRepository) Insert(dto *dtos.UserDto) (string, error) {
+	collection := repo.client.Database(repo.databaseName).Collection(userCollection)
 	now := primitive.DateTime(time.Now().UnixNano() / 1e6)
+
+	hashedPwdInBytes, err := bcrypt.GenerateFromPassword([]byte(dto.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return string(""), errors.Wrap(err, "hashing a password")
+	}
+
 	data := bson.D{
-		primitive.E{Key: "name", Value: supplier.Name},
-		primitive.E{Key: "surname", Value: supplier.Surname},
-		primitive.E{Key: "documentType", Value: supplier.DocumentType},
-		primitive.E{Key: "documentNumber", Value: supplier.DocumentNumber},
-		primitive.E{Key: "cityId", Value: supplier.CityID},
-		primitive.E{Key: "email", Value: supplier.Email},
-		primitive.E{Key: "addressLine1", Value: supplier.AddressLine1},
-		primitive.E{Key: "phoneNumber", Value: supplier.PhoneNumber},
+		primitive.E{Key: "name", Value: dto.Name},
+		primitive.E{Key: "surname", Value: dto.Surname},
+		primitive.E{Key: "documentType", Value: dto.DocumentType},
+		primitive.E{Key: "documentNumber", Value: dto.DocumentNumber},
+		primitive.E{Key: "cityId", Value: dto.CityID},
+		primitive.E{Key: "email", Value: dto.Email},
+		primitive.E{Key: "hashedPassword", Value: string(hashedPwdInBytes)},
+		primitive.E{Key: "addressLine1", Value: dto.AddressLine1},
+		primitive.E{Key: "phoneNumber", Value: dto.PhoneNumber},
+		primitive.E{Key: "role", Value: "user"},
 		primitive.E{Key: "createdAt", Value: now},
 		primitive.E{Key: "updatedAt", Value: now},
 		primitive.E{Key: "recordStatus", Value: enums.Active},
 	}
 	result, err := collection.InsertOne(context.TODO(), data)
 	if err != nil {
-		return string(""), errors.Wrap(err, "Inserting a new supplier")
+		return string(""), errors.Wrap(err, "Inserting a new user")
 	}
 	return result.InsertedID.(primitive.ObjectID).Hex(), nil
 }
 
-// Update a supplier's document by its id in mongodb
-func (repo *MongoSupplierRepository) Update(id string, supplier *dtos.SupplierDto) (*models.Supplier, error) {
-	collection := repo.client.Database(repo.databaseName).Collection(supplierCollection)
+// Update an user document by its id in mongodb
+func (repo *MongoUserRepository) Update(id string, dto *dtos.UserDto) (*models.User, error) {
+	collection := repo.client.Database(repo.databaseName).Collection(userCollection)
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing ObjectID from Hex")
@@ -142,14 +170,14 @@ func (repo *MongoSupplierRepository) Update(id string, supplier *dtos.SupplierDt
 	update := bson.D{primitive.E{
 		Key: "$set",
 		Value: bson.D{
-			primitive.E{Key: "name", Value: supplier.Name},
-			primitive.E{Key: "surname", Value: supplier.Surname},
-			primitive.E{Key: "documentType", Value: supplier.DocumentType},
-			primitive.E{Key: "documentNumber", Value: supplier.DocumentNumber},
-			primitive.E{Key: "cityId", Value: supplier.CityID},
-			primitive.E{Key: "email", Value: supplier.Email},
-			primitive.E{Key: "addressLine1", Value: supplier.AddressLine1},
-			primitive.E{Key: "phoneNumber", Value: supplier.PhoneNumber},
+			primitive.E{Key: "name", Value: dto.Name},
+			primitive.E{Key: "surname", Value: dto.Surname},
+			primitive.E{Key: "documentType", Value: dto.DocumentType},
+			primitive.E{Key: "documentNumber", Value: dto.DocumentNumber},
+			primitive.E{Key: "cityId", Value: dto.CityID},
+			primitive.E{Key: "email", Value: dto.Email},
+			primitive.E{Key: "addressLine1", Value: dto.AddressLine1},
+			primitive.E{Key: "phoneNumber", Value: dto.PhoneNumber},
 			primitive.E{Key: "updatedAt", Value: primitive.DateTime(time.Now().UnixNano() / 1e6)},
 		},
 	}}
@@ -161,19 +189,19 @@ func (repo *MongoSupplierRepository) Update(id string, supplier *dtos.SupplierDt
 	if result.Err() != nil {
 		return nil, result.Err()
 	}
-	var updatedSupplier *models.Supplier
-	if err := result.Decode(&updatedSupplier); err != nil {
+	var updatedUser *models.User
+	if err := result.Decode(&updatedUser); err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, nil
 		}
-		return nil, errors.Wrap(err, "Error decoding a supplier")
+		return nil, errors.Wrap(err, "Error decoding an user")
 	}
-	return updatedSupplier, nil
+	return updatedUser, nil
 }
 
 // Delete a supliers document from mongodb
-func (repo *MongoSupplierRepository) Delete(id string) (bool, error) {
-	collection := repo.client.Database(repo.databaseName).Collection(supplierCollection)
+func (repo *MongoUserRepository) Delete(id string) (bool, error) {
+	collection := repo.client.Database(repo.databaseName).Collection(userCollection)
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return false, errors.Wrap(err, "Error parsing ObjectID from Hex")
@@ -181,12 +209,12 @@ func (repo *MongoSupplierRepository) Delete(id string) (bool, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: objID}}
 	result, err := collection.DeleteOne(context.Background(), filter)
 	if err != nil {
-		return false, errors.Wrap(err, "Error deleting a supplier")
+		return false, errors.Wrap(err, "Error deleting an user")
 	}
 	return result.DeletedCount > 0, nil
 }
 
-func buildStandardSupplierPipeline() []bson.M {
+func buildStandardUserPipeline() []bson.M {
 	return []bson.M{
 		bson.M{"$lookup": bson.M{
 			"from":         "crops",
@@ -273,6 +301,9 @@ func buildStandardSupplierPipeline() []bson.M {
 			"crops": bson.M{
 				"$push": "$crops",
 			},
+			"role": bson.M{
+				"$first": "$role",
+			},
 		}},
 		bson.M{"$project": bson.M{
 			"_id":            1,
@@ -287,6 +318,7 @@ func buildStandardSupplierPipeline() []bson.M {
 			"createdAt":      1,
 			"updatedAt":      1,
 			"recordStatus":   1,
+			"role":           1,
 			"crops": bson.M{
 				"$cond": bson.A{bson.M{"$eq": bson.A{"$hasCrops", 0}}, bson.A{}, "$crops"},
 			},
@@ -294,7 +326,7 @@ func buildStandardSupplierPipeline() []bson.M {
 	}
 }
 
-// NewMongoSupplierRepository returns a new instance of a MongoDB supplier repo.
-func NewMongoSupplierRepository(confPtr *config.Config, clientPtr *mongo.Client) *MongoSupplierRepository {
-	return &MongoSupplierRepository{databaseName: confPtr.Database.Name, client: clientPtr}
+// NewMongoUserRepository returns a new instance of a MongoDB user repo.
+func NewMongoUserRepository(confPtr *config.Config, clientPtr *mongo.Client) *MongoUserRepository {
+	return &MongoUserRepository{databaseName: confPtr.Database.Name, client: clientPtr}
 }

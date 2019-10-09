@@ -9,50 +9,55 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// SupplierHandler return a handler for the Rest API of a supplier
-type SupplierHandler struct {
-	Service *services.SupplierService
+// ItemHandler return a handler for the Rest API of a item
+type ItemHandler struct {
+	Service *services.ItemService
 }
 
-// NewRouter export a router configured with supplier routes
-func (h *SupplierHandler) NewRouter() chi.Router {
+// NewRouter export a router configured with a supplier's routes
+func (h *ItemHandler) NewRouter() chi.Router {
 	r := chi.NewRouter()
 
-	r.Method(http.MethodGet, "/", rootHandler(h.findAllSuppliers))
-	r.Method(http.MethodPost, "/", rootHandler(h.createSupplier))
+	r.Method(http.MethodGet, "/", rootHandler(h.findAllItems))
+	r.Method(http.MethodPost, "/", rootHandler(h.createItem))
 
 	// Subroutes:
-	r.Route("/{supplierID}", func(r chi.Router) {
-		r.Method(http.MethodGet, "/", rootHandler(h.findSupplierByID))
-		r.Method(http.MethodPut, "/", rootHandler(h.updateSupplierByID))
-		r.Method(http.MethodDelete, "/", rootHandler(h.deleteSupplierByID))
+	r.Route("/{itemID}", func(r chi.Router) {
+		r.Method(http.MethodGet, "/", rootHandler(h.findItemByID))
+		r.Method(http.MethodPut, "/", rootHandler(h.updateItemID))
+		r.Method(http.MethodDelete, "/", rootHandler(h.deleteItemByID))
 	})
 
 	return r
 }
 
-func (h *SupplierHandler) findAllSuppliers(w http.ResponseWriter, r *http.Request) error {
-	suppliers, err := h.Service.FindAllSuppliers()
+func (h *ItemHandler) findAllItems(w http.ResponseWriter, r *http.Request) error {
+	items, err := h.Service.FindAllItems()
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(suppliers); err != nil {
+	if err := json.NewEncoder(w).Encode(items); err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	return nil
 }
 
-func (h *SupplierHandler) createSupplier(w http.ResponseWriter, r *http.Request) error {
-	var payload dtos.SupplierDto
+func (h *ItemHandler) createItem(w http.ResponseWriter, r *http.Request) error {
+	var payload dtos.ItemDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
 	}
 
-	supplier, err := h.Service.CreateSupplier(&payload)
+	result, err := h.Service.CreateItem(&payload)
+	if err != nil {
+		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
+	}
+
+	supplier, err := h.Service.FindItemByID(result)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
@@ -65,39 +70,39 @@ func (h *SupplierHandler) createSupplier(w http.ResponseWriter, r *http.Request)
 	return nil
 }
 
-func (h *SupplierHandler) findSupplierByID(w http.ResponseWriter, r *http.Request) error {
-	supplierID := chi.URLParam(r, "supplierID")
-	supplier, err := h.Service.PopulateSupplierByID(supplierID)
+func (h *ItemHandler) findItemByID(w http.ResponseWriter, r *http.Request) error {
+	itemID := chi.URLParam(r, "itemID")
+	item, err := h.Service.FindItemByID(itemID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
-	if supplier == nil {
-		return NewNotFoundError(nil, "Supplier Not Found")
+	if item == nil {
+		return NewNotFoundError(nil, "Item Not Found")
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(supplier); err != nil {
+	if err := json.NewEncoder(w).Encode(item); err != nil {
 		return NewAPIError(err, 500, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 	return nil
 }
 
-func (h *SupplierHandler) updateSupplierByID(w http.ResponseWriter, r *http.Request) error {
-	supplierID := chi.URLParam(r, "supplierID")
-	var payload dtos.SupplierDto
+func (h *ItemHandler) updateItemID(w http.ResponseWriter, r *http.Request) error {
+	itemID := chi.URLParam(r, "itemID")
+	var payload dtos.ItemDto
 	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
 		return NewAPIError(nil, http.StatusBadRequest, http.StatusBadRequest, "Bad request : invalid JSON.")
 	}
 
-	supplier, err := h.Service.UpdateSupplierByID(supplierID, &payload)
+	supplier, err := h.Service.UpdateItemByID(itemID, &payload)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 
 	if supplier == nil {
-		return NewNotFoundError(nil, "Supplier Not Found")
+		return NewNotFoundError(nil, "Item Not Found")
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -108,14 +113,14 @@ func (h *SupplierHandler) updateSupplierByID(w http.ResponseWriter, r *http.Requ
 	return nil
 }
 
-func (h *SupplierHandler) deleteSupplierByID(w http.ResponseWriter, r *http.Request) error {
-	supplierID := chi.URLParam(r, "supplierID")
-	result, err := h.Service.DeleteSupplier(supplierID)
+func (h *ItemHandler) deleteItemByID(w http.ResponseWriter, r *http.Request) error {
+	itemID := chi.URLParam(r, "itemID")
+	result, err := h.Service.DeleteItemByID(itemID)
 	if err != nil {
 		return NewAPIError(err, http.StatusInternalServerError, http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	}
 	if result == false {
-		return NewNotFoundError(nil, "Supplier Not Found")
+		return NewNotFoundError(nil, "Item Not Found")
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
