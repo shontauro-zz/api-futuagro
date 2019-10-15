@@ -17,7 +17,8 @@ plugins:
   - serverless-dotenv-plugin
   - serverless-offline
   - serverless-prune-plugin
-frameworkVersion: '>=1.28.0 <2.0.0'
+  - serverless-domain-manager
+frameworkVersion: ">=1.28.0 <2.0.0"
 
 provider:
   name: aws
@@ -37,6 +38,18 @@ custom:
   prune:
     automatic: true
     number: 3
+  stage: ${opt:stage, 'dev'}
+  domain:
+    dev: "dev-api.futuagro.com"
+    prod: "api.futuagro.com"
+  certName:
+    dev: futuagro.com
+    prod: futuagro.com
+  customDomain:
+    domainName: ${self:custom.domain.${opt:stage}}
+    basePath: ""
+    stage: ${self:custom.stage}
+    createRoute53Record: false
 
 package:
   exclude:
@@ -57,4 +70,4 @@ functions:
       MY_AWS_ACCESS_KEY_ID: ${env:MY_AWS_ACCESS_KEY_ID}
     events:
       - http: ANY /
-      - http: 'ANY {proxy+}'
+      - http: "ANY {proxy+}"
