@@ -42,14 +42,14 @@ custom:
   domain:
     dev: "dev-api.futuagro.com"
     prod: "api.futuagro.com"
-  certName:
-    dev: futuagro.com
-    prod: futuagro.com
   customDomain:
     domainName: ${self:custom.domain.${opt:stage}}
     basePath: ""
     stage: ${self:custom.stage}
+    certificateArn: ${env:DOMAIN_API_CERTIFICATE_ARN}
     createRoute53Record: false
+    endpointType: "edge"
+    securityPolicy: tls_1_2
 
 package:
   exclude:
